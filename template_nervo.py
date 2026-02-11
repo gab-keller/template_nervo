@@ -336,19 +336,19 @@ with c_right:
         disabled=True,
     )
 
-    # MRC-SS (below PND, aligned + wide)
-    mrc_display_value = (
-        str(st.session_state["mrc_ss_total"])
-        if str(st.session_state["mrc_ss_total"]).strip() != ""
-        else "Calculada automaticamente, conforme exame físico"
-    )
+# MRC-SS (below PND, aligned + wide)
+mrc_display_value = (
+    str(st.session_state["mrc_ss_total"])
+    if str(st.session_state["mrc_ss_total"]).strip() != ""
+    else "Calculada automaticamente, conforme exame físico"
+)
 
-    st.text_input(
-        "Escala MRC-SS",
-        value=mrc_display_value,
-        disabled=True,
-        key="display_mrcss_total",
-    )
+st.text_input(
+    "Escala MRC-SS",
+    value=mrc_display_value,
+    disabled=True,
+)
+
 
 with _fill:
     st.empty()
@@ -416,19 +416,19 @@ if st.session_state["incat_open"]:
     st.markdown(f"**MMSS ({ul}) + MMII ({ll}) = {total}**")
     st.markdown(f"**PND: {pnd}**")
     
-b1, b2, _bfill = st.columns([1.4, 1.0, 10.0])
-
-with b1:
-    if st.button("Salvar INCAT/PND", key="btn_save_incat", type="primary"):
-        st.session_state["incat_total"] = f"MMSS ({ul}) + MMII ({ll}) = {total}"
-        st.session_state["pnd_total"] = pnd
-        st.session_state["incat_open"] = False
-        st.rerun()
-
-with b2:
-    if st.button("Cancelar", key="btn_cancel_incat"):
-        st.session_state["incat_open"] = False
-        st.rerun()
+    b1, b2, _bfill = st.columns([1.4, 1.0, 10.0])
+    
+    with b1:
+        if st.button("Salvar INCAT/PND", key="btn_save_incat", type="primary"):
+            st.session_state["incat_total"] = f"MMSS ({ul}) + MMII ({ll}) = {total}"
+            st.session_state["pnd_total"] = pnd
+            st.session_state["incat_open"] = False
+            st.rerun()
+    
+    with b2:
+        if st.button("Cancelar", key="btn_cancel_incat"):
+            st.session_state["incat_open"] = False
+            st.rerun()
 
 
 st.markdown("**Outras escalas e métricas de seguimento**")
