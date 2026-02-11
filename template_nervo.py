@@ -4,8 +4,8 @@ import streamlit as st
 st.title("Template nervo periférico")
 
 st.markdown(
-    "<div style='font-size:30px; color:#666; margin-top:-0.5rem; margin-bottom:1rem;'>"
-    "Consulta inicial e de retorno"
+    "<div style='font-size:27px; color:#666; margin-top:-0.5rem; margin-bottom:1rem;'>"
+    "consulta inicial e de retorno"
     "</div>",
     unsafe_allow_html=True,
 )
