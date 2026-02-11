@@ -274,6 +274,7 @@ descricao_evo = text_area_lines(
 
 # -----------------------------
 # INCAT + PND selector (no st.dialog) - FULL-WIDTH + PND BELOW INCAT
+# + MRC-SS aligned (same column as INCAT/PND) and wider
 # -----------------------------
 
 def ll_to_pnd(ll_value: int) -> str:
@@ -299,15 +300,30 @@ if "incat_total" not in st.session_state:
     st.session_state["incat_total"] = ""   # formatted string
 if "pnd_total" not in st.session_state:
     st.session_state["pnd_total"] = ""     # formatted string like "PND II"
+if "mrc_ss_total" not in st.session_state:
+    st.session_state["mrc_ss_total"] = ""  # blank until calculated
 
-# IMPORTANT: keep a wide filler column so the layout spans full width
-c_btn, c_boxes, c_fill = st.columns([1.9, 3.2, 10.0], vertical_alignment="top")
+# IMPORTANT: define mrc_keys here (used later by compute_mrc_ss)
+mrc_keys = [
+    "mrc_ombro_D", "mrc_ombro_E",
+    "mrc_cotovelo_D", "mrc_cotovelo_E",
+    "mrc_punho_D", "mrc_punho_E",
+    "mrc_quadril_D", "mrc_quadril_E",
+    "mrc_joelho_D", "mrc_joelho_E",
+    "mrc_tornozelo_D", "mrc_tornozelo_E",
+]
 
-with c_btn:
+# -----------------------------
+# ALIGNED DISPLAY AREA
+# Button LEFT, all outputs RIGHT (stacked) -> perfect alignment + wider box
+# -----------------------------
+c_left, c_right, _fill = st.columns([2.2, 7.0, 3.0], vertical_alignment="top")
+
+with c_left:
     if st.button("Escala INCAT e PND", key="btn_open_incat"):
         st.session_state["incat_open"] = True
 
-with c_boxes:
+with c_right:
     # INCAT display (top)
     st.text_input(
         "Escala INCAT (MMSS + MMII)",
@@ -317,6 +333,7 @@ with c_boxes:
             else "Calculada automaticamente"
         ),
         disabled=True,
+        key="display_incat_total",
     )
 
     # PND display (below)
@@ -328,9 +345,24 @@ with c_boxes:
             else "Calculada automaticamente"
         ),
         disabled=True,
+        key="display_pnd_total",
     )
 
-with c_fill:
+    # MRC-SS (below PND, aligned + wide)
+    mrc_display_value = (
+        str(st.session_state["mrc_ss_total"])
+        if str(st.session_state["mrc_ss_total"]).strip() != ""
+        else "Calculada automaticamente, conforme exame físico"
+    )
+
+    st.text_input(
+        "Escala MRC-SS",
+        value=mrc_display_value,
+        disabled=True,
+        key="display_mrcss_total",
+    )
+
+with _fill:
     st.empty()
 
 
@@ -408,33 +440,6 @@ if st.session_state["incat_open"]:
         if st.button("Cancelar", key="btn_cancel_incat"):
             st.session_state["incat_open"] = False
             st.rerun()
-
-# ---- MRC-SS display (right after INCAT) ----
-
-mrc_keys = [
-    "mrc_ombro_D", "mrc_ombro_E",
-    "mrc_cotovelo_D", "mrc_cotovelo_E",
-    "mrc_punho_D", "mrc_punho_E",
-    "mrc_quadril_D", "mrc_quadril_E",
-    "mrc_joelho_D", "mrc_joelho_E",
-    "mrc_tornozelo_D", "mrc_tornozelo_E",
-]
-
-if "mrc_ss_total" not in st.session_state:
-    st.session_state["mrc_ss_total"] = ""  # blank until calculated
-
-
-# Define what should appear inside the box
-if st.session_state["mrc_ss_total"] != "":
-    mrc_display_value = str(st.session_state["mrc_ss_total"])
-else:
-    mrc_display_value = "Calculada automaticamente, conforme exame físico"
-
-
-inline_label_display(
-    "Escala MRC-SS",
-    mrc_display_value,
-)
 
 
 st.markdown("**Outras escalas e métricas de seguimento**")
