@@ -257,14 +257,14 @@ st.subheader("Avaliação funcional")
 
 cL, cR = st.columns([2.2, 9.8], vertical_alignment="top")
 with cL:
-    if st.button("Limitações motoras atuais", key="btn_open_func"):
+    if st.button("Avaliação funcional", key="btn_open_func"):
         st.session_state["func_open"] = True
 with cR:
     disp = st.session_state.get("func_resumo", "").strip()
     if not disp:
-        disp = "Gerado automaticamente ao preencher limitações motoras"
+        disp = "Gerado automaticamente ao preencher a avaliação funcional"
     st.text_area(
-    "Limitações motoras (resumo)",
+    "Avaliação funcional (resumo)",
     value=disp,
     height=120,   # ~4–5 lines
     disabled=True,
@@ -416,7 +416,7 @@ if st.session_state["func_open"]:
             st.session_state["func_open"] = False
             st.rerun()
     with b2:
-        if st.button("Cancelar", key="btn_cancel_func"):
+        if st.button("Minimizar menu de seleção", key="btn_cancel_func"):
             st.session_state["func_open"] = False
             st.rerun()
 
@@ -629,7 +629,7 @@ if st.session_state["forca_open"]:
             st.session_state["forca_open"] = False
             st.rerun()
     with b2:
-        if st.button("Cancelar", key="btn_cancel_forca"):
+        if st.button("Minimizar menu de seleção", key="btn_cancel_forca"):
             st.session_state["forca_open"] = False
             st.rerun()
 
@@ -652,7 +652,6 @@ _ = text_area_lines(
     ),
 )
 
-st.divider()
 # =========================================================
 # 6) PELE / EXAME CLÍNICO GERAL
 # =========================================================
@@ -665,7 +664,6 @@ _ = text_area_lines(
     placeholder="Alterações da pele (quelóide, hiperqueratose folicular), cardíaco, respiratório, abdominal, etc.",
 )
 
-st.divider()
 # =========================================================
 # 7) OSTEOESQUELÉTICAS / DISMORFISMOS
 # =========================================================
