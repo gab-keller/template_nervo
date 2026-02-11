@@ -142,5 +142,4 @@ with st.expander("Visualizar dados (debug)", expanded=False):
             "paciente_transplantado": transplantado,
         }
     )
-```
 
