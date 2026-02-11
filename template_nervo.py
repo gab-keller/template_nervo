@@ -157,7 +157,7 @@ historia_clinica = text_area_lines(
     label="",
     lines=10,
     key="historia_clinica_texto",
-    placeholder="Descreva aqui a história clínica...",
+    placeholder="História da moléstia atual",
 )
 
 # -----------------------------
@@ -168,7 +168,7 @@ antecedentes = text_area_lines(
     label="",
     lines=4,
     key="antecedentes_patologicos_texto",
-    placeholder="Comorbidades, cirurgias, alergias, etc...",
+    placeholder="Comorbidades, vícios, exposições ocupacionais/ambientais, histórico de perda ponderal, etc.",
 )
 
 # -----------------------------
@@ -179,7 +179,7 @@ hist_familiar = text_area_lines(
     label="",
     lines=4,
     key="historia_familiar_texto",
-    placeholder="Detalhe antecedentes familiares relevantes...",
+    placeholder="Familiares acometidos; estado de saúde de pais, irmãos e filhos; cidade de origem dos pais; consanguinidade; etc.",
 )
 
 c0, c1, c2, _fill = st.columns([2.2, 1.4, 1.4, 10.0], vertical_alignment="center")
@@ -213,14 +213,14 @@ if tratamento_atual == "em uso de tratamento medicamentoso":
     _ = inline_label_input(
         "há quanto tempo",
         key="trat_em_uso_tempo",
-        placeholder="Ex.: 6 meses / 2 anos",
+        placeholder="Ex.: desde jan/2021",
     )
 
 elif tratamento_atual == "sem tratamento medicamentoso":
     _ = inline_label_input(
         "há quanto tempo",
         key="trat_sem_tempo",
-        placeholder="Ex.: 3 meses / desde 2021",
+        placeholder="Ex.: desde jan/2021",
     )
 
 st.markdown("**Medicamentos de uso atual ou prévio, com data de início, data de término e motivo da suspensão**")
@@ -242,7 +242,7 @@ outros_meds = text_area_lines(
     placeholder="",
 )
 
-transplantado = st.checkbox("Paciente transplantado", key="paciente_transplantado")
+transplantado = st.checkbox("Paciente transplantado hepático", key="paciente_transplantado")
 
 # -----------------------------
 # 5) Evolução clínica
@@ -265,7 +265,7 @@ if controle_atual == "estável ou melhorando":
     _ = inline_label_input(
         "há quanto tempo",
         key="evo_estavel_tempo",
-        placeholder="Ex.: 2 meses",
+        placeholder="Ex.: desde jan/2021",
     )
 
 st.markdown("**Descrição da evolução:**")
@@ -313,11 +313,12 @@ if st.session_state["incat_open"]:
     st.markdown("**Membros Superiores**")
     ul_options = {
         0: "0 – Sem problemas nos membros superiores.",
-        1: "1 – Sintomas em um ou ambos os braços, sem afetar a capacidade de realizar nenhuma das seguintes funções:\n"
-           "• fechar todos os zíperes e botões\n"
-           "• lavar ou pentear o cabelo\n"
-           "• usar faca e garfo juntos\n"
-           "• manusear moedas pequenas",
+        1: ("1 – Sintomas em um ou ambos os braços, sem afetar a capacidade de realizar nenhuma das seguintes funções:\n"
+            "• fechar todos os zíperes e botões\n"
+            "• lavar ou pentear o cabelo\n"
+            "• usar faca e garfo juntos\n"
+            "• manusear moedas pequenas"
+            ),
         2: "2 – Sintomas em um ou ambos os braços, afetando, mas não impedindo, nenhuma das funções acima.",
         3: "3 – Sintomas em um ou ambos os braços, impedindo uma ou duas das funções listadas acima.",
         4: "4 – Sintomas em um ou ambos os braços, impedindo três ou todas as funções listadas acima, mas ainda com alguns movimentos propositais possíveis.",
@@ -395,7 +396,7 @@ _ = text_area_lines(
     label="",
     lines=5,
     key="outras_escalas_seguimento",
-    placeholder="NIS, dinamometria, tempo de marcha, TUG",
+    placeholder="NIS, dinamometria, tempo de marcha, TUG, ect.",
 )
 
 
