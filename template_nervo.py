@@ -214,7 +214,7 @@ with c_incat_btn:
 with c_incat_box:
     # IMPORTANT: no key here, so it always reflects st.session_state["incat_total"]
     st.text_input(
-        "Escala INCAT (UL + LL)",
+        "Escala INCAT (MMSS + MMII)",
         value=str(st.session_state["incat_total"]) if st.session_state["incat_total"] != "" else "",
         disabled=True,
     )
@@ -275,7 +275,7 @@ if st.session_state["incat_open"]:
     ul = int(st.session_state["incat_ul"])
     ll = int(st.session_state["incat_ll"])
     total = ul + ll
-    st.markdown(f"**MMSS ({ul}) + MMII ({ll}) = {total}**")
+    st.markdown(f"**MMSS {ul} + MMII {ll} = {total}**")
 
     b1, b2, _bfill = st.columns([1, 1, 10.0])
     with b1:
