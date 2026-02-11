@@ -196,7 +196,7 @@ if esporadico and familiar:
 # -----------------------------
 # 4) Medicações modificadoras de doença/Imunossupressores
 # -----------------------------
-st.subheader("Medicações modificadoras de doença/Imunossupressores")
+st.subheader("Medicamentos")
 st.markdown("**Tratamento atual:**")
 
 tratamento_atual = st.radio(
@@ -223,13 +223,13 @@ elif tratamento_atual == "sem tratamento medicamentoso":
         placeholder="Ex.: desde jan/2021",
     )
 
-st.markdown("**Medicamentos de uso atual ou prévio, com data de início, data de término e motivo da suspensão**")
+st.markdown("**Histórico de medicamentos modificadores de doença/imunossupressores**")
 meds_atual_previo = text_area_lines(
     label="",
     lines=5,
     key="meds_atual_previo_texto",
     placeholder=(
-        "Medicamento, data de início, data de término e motivo da suspensão.\n"
+        "Medicamento (uso atual ou prévio), data de início, data de término e motivo da suspensão.\n"
         "Ex.: Rituximabe 1g D1/D15, início 01/2024, suspensão 07/2024 por infecção"
     ),
 )
@@ -400,7 +400,7 @@ _ = text_area_lines(
     label="",
     lines=5,
     key="outras_escalas_seguimento",
-    placeholder="NIS, dinamometria, tempo de marcha, TUG, ect.",
+    placeholder="NIS, dinamometria, tempo de marcha, TUG, etc.",
 )
 
 
@@ -519,7 +519,8 @@ _ = text_area_lines(
     label="",
     lines=4,
     key="impressao_discussao",
-    placeholder="Impressão diagnóstica. Avaliação sobre o estado atual de controle ou se há progressão da doença",
+    placeholder="Impressão diagnóstica.\n"
+    "Inferência sobre o estado atual de controle da doença (estável, progredindo), baseado em quais métricas",
 )
 
 # -----------------------------
@@ -536,7 +537,7 @@ dx_options = [
 ]
 
 dx_categoria = st.radio(
-    "Selecione UMA opção",
+    "",
     options=dx_options,
     key="radio_dx_categoria",
 )
@@ -546,7 +547,7 @@ if dx_categoria == "Neuropatia genética":
     with st.expander("Detalhar (Neuropatia genética)", expanded=True):
         gen_options = ["PMP22", "MPZ", "GJB1", "MFN2", "Outro"]
         dx_genetica_choice = st.radio(
-            "Gene / causa (selecione UMA opção)",
+            "Gene:",
             options=gen_options,
             key="dx_genetica_choice",
         )
@@ -555,7 +556,7 @@ if dx_categoria == "Neuropatia genética":
             st.text_input(
                 "Especifique:",
                 key="dx_genetica_outro",
-                placeholder="Ex.: SH3TC2, NEFL, TTR, etc.",
+                placeholder="Ex.: GDAP1, TTR, etc.",
             )
 
 # ---- Submenu: Neuropatia imunomediada (single choice) ----
@@ -611,3 +612,200 @@ _ = text_area_lines(
     key="conduta",
     placeholder="Conduta diagnóstica e terapêutica",
 )
+
+# =============================
+# ADD THIS BLOCK AT THE VERY END OF YOUR FILE (after "Conduta:")
+# =============================
+
+def _get(key: str, default: str = "") -> str:
+    v = st.session_state.get(key, default)
+    if v is None:
+        return ""
+    s = str(v).strip()
+    return s
+
+def _bool_to_txt(v: bool) -> str:
+    return "Sim" if v else "Não"
+
+def _section(title: str, body: str) -> str:
+    body = body.strip()
+    if not body:
+        return ""
+    return f"{title}\n{body}\n"
+
+def build_export_text(include_all: bool) -> str:
+    # ---- História / antecedentes (only for "histórico completo") ----
+    parts = []
+    if include_all:
+        parts.append(_section("HISTÓRIA CLÍNICA", f"Idade ao início dos sintomas: {_get('idade_inicio_sintomas')}\n{_get('historia_clinica_texto')}"))
+        parts.append(_section("ANTECEDENTES PATOLÓGICOS", _get("antecedentes_patologicos_texto")))
+        hf = _get("historia_familiar_texto")
+        padrao = []
+        if st.session_state.get("hf_esporadico"):
+            padrao.append("Esporádico")
+        if st.session_state.get("hf_familiar"):
+            padrao.append("Familiar")
+        padrao_txt = ", ".join(padrao) if padrao else ""
+        hf_block = hf
+        if padrao_txt:
+            hf_block = (hf_block + "\n" if hf_block else "") + f"Padrão de herança: {padrao_txt}"
+        parts.append(_section("HISTÓRIA FAMILIAR", hf_block))
+
+    # ---- Medicações modificadoras ----
+    trat = _get("tratamento_atual_radio")
+    trat_line = f"Tratamento atual: {trat}" if trat else ""
+    tempo = ""
+    if trat == "em uso de tratamento medicamentoso":
+        tempo = _get("trat_em_uso_tempo")
+    elif trat == "sem tratamento medicamentoso":
+        tempo = _get("trat_sem_tempo")
+    if tempo:
+        trat_line = (trat_line + "\n" if trat_line else "") + f"Há quanto tempo: {tempo}"
+
+    meds_block = "\n".join([x for x in [
+        trat_line,
+        "Medicamentos de uso atual ou prévio:\n" + _get("meds_atual_previo_texto") if _get("meds_atual_previo_texto") else "",
+        "Outros medicamentos:\n" + _get("outros_meds_texto") if _get("outros_meds_texto") else "",
+        "Paciente transplantado hepático: " + _bool_to_txt(bool(st.session_state.get("paciente_transplantado"))) if "paciente_transplantado" in st.session_state else "",
+    ] if x.strip()])
+
+    parts.append(_section("MEDICAÇÕES MODIFICADORAS DE DOENÇA / IMUNOSSUPRESSORES", meds_block))
+
+    # ---- Evolução clínica ----
+    controle = _get("controle_atual_radio")
+    evo_lines = []
+    if controle:
+        evo_lines.append(f"Controle atual: {controle}")
+    if controle == "estável ou melhorando":
+        t = _get("evo_estavel_tempo")
+        if t:
+            evo_lines.append(f"Há quanto tempo: {t}")
+    desc = _get("evo_descricao_texto")
+    if desc:
+        evo_lines.append("Descrição da evolução:\n" + desc)
+
+    incat = _get("incat_total")
+    if incat:
+        evo_lines.append(f"Escala INCAT: {incat}")
+
+    mrc_ss = _get("mrc_ss_total")
+    if mrc_ss:
+        evo_lines.append(f"MRC-SS: {mrc_ss}")
+
+    outras = _get("outras_escalas_seguimento")
+    if outras:
+        evo_lines.append("Outras escalas e métricas:\n" + outras)
+
+    parts.append(_section("EVOLUÇÃO CLÍNICA", "\n".join(evo_lines)))
+
+    # ---- Exame físico neurológico ----
+    exame_neuro = _get("exame_fisico_neuro_texto")
+    mrc_lines = []
+    # pull MRC values if present
+    mrc_map = [
+        ("Abdução do ombro", "mrc_ombro_D", "mrc_ombro_E"),
+        ("Flexão do cotovelo", "mrc_cotovelo_D", "mrc_cotovelo_E"),
+        ("Extensão do punho", "mrc_punho_D", "mrc_punho_E"),
+        ("Flexão do quadril", "mrc_quadril_D", "mrc_quadril_E"),
+        ("Extensão do joelho", "mrc_joelho_D", "mrc_joelho_E"),
+        ("Dorsiflexão do tornozelo", "mrc_tornozelo_D", "mrc_tornozelo_E"),
+    ]
+    for label, kd, ke in mrc_map:
+        vd = _get(kd)
+        ve = _get(ke)
+        if vd or ve:
+            mrc_lines.append(f"{label}: D {vd or '-'} / E {ve or '-'}")
+    if mrc_lines:
+        mrc_block = "MRC:\n" + "\n".join(mrc_lines)
+    else:
+        mrc_block = ""
+
+    # deformidades key was mentioned earlier in the conversation, but not present in the pasted code
+    deform = _get("deformidades_osteo_texto")
+
+    exame_block_parts = []
+    if exame_neuro:
+        exame_block_parts.append(exame_neuro)
+    if mrc_block:
+        exame_block_parts.append(mrc_block)
+    if deform:
+        exame_block_parts.append("Deformidades osteoesqueléticas e exame clínico geral:\n" + deform)
+
+    parts.append(_section("EXAME FÍSICO NEUROLÓGICO", "\n\n".join(exame_block_parts)))
+
+    # ---- Exames complementares ----
+    exames_lines = []
+    if _get("exames_enmg"):
+        exames_lines.append("ENMG: " + _get("exames_enmg"))
+    if _get("exames_liquor"):
+        exames_lines.append("Líquor: " + _get("exames_liquor"))
+    if _get("exames_usg_nervos"):
+        exames_lines.append("USG nervos: " + _get("exames_usg_nervos"))
+    if _get("exames_biopsia"):
+        exames_lines.append("Biópsia: " + _get("exames_biopsia"))
+    if _get("exames_demais"):
+        exames_lines.append("Demais exames: " + _get("exames_demais"))
+    parts.append(_section("EXAMES COMPLEMENTARES", "\n".join(exames_lines)))
+
+    # ---- Impressão e discussão ----
+    parts.append(_section("IMPRESSÃO E DISCUSSÃO", _get("impressao_discussao")))
+
+    # ---- Diagnóstico / hipótese ----
+    dx = _get("radio_dx_categoria")
+    dx_lines = []
+    if dx:
+        dx_lines.append(dx)
+
+    if dx == "Neuropatia genética":
+        gene = _get("dx_genetica_choice")
+        if gene == "Outro":
+            gene = _get("dx_genetica_outro") or "Outro (não especificado)"
+        if gene:
+            dx_lines.append(f"Gene: {gene}")
+
+    if dx == "Neuropatia imunomediada":
+        sub = _get("dx_imuno_choice")
+        if sub == "Outro":
+            sub = _get("dx_imuno_outro") or "Outro (não especificado)"
+        if sub:
+            dx_lines.append(f"Subtipo: {sub}")
+
+    parts.append(_section("DIAGNÓSTICO / HIPÓTESE DIAGNÓSTICA", "\n".join(dx_lines)))
+
+    # ---- Conduta ----
+    parts.append(_section("CONDUTA", _get("conduta")))
+
+    # Final cleanup: remove empty sections and add separators
+    cleaned = [p for p in parts if p.strip()]
+    return "\n".join(cleaned).strip() + "\n"
+
+
+st.divider()
+st.subheader("Exportação (copiar e colar no Notepad)")
+
+c_exp1, c_exp2 = st.columns([1.2, 1.6], vertical_alignment="center")
+with c_exp1:
+    if st.button("Exportar evolução", key="btn_export_evolucao"):
+        st.session_state["export_text"] = build_export_text(include_all=False)
+
+with c_exp2:
+    if st.button("Exportar histórico completo", key="btn_export_completo"):
+        st.session_state["export_text"] = build_export_text(include_all=True)
+
+export_text = st.session_state.get("export_text", "")
+
+if export_text:
+    st.text_area(
+        "Texto para copiar (Ctrl+A, Ctrl+C)",
+        value=export_text,
+        height=320,
+        key="export_text_area",
+    )
+    st.download_button(
+        "Baixar .txt",
+        data=export_text.encode("utf-8"),
+        file_name="template_nervo_export.txt",
+        mime="text/plain",
+        key="download_txt_export",
+    )
+
