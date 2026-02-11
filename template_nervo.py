@@ -470,16 +470,16 @@ dx_categoria = st.radio(
 # ---- Submenu: Neuropatia genética (single choice) ----
 if dx_categoria == "Neuropatia genética":
     with st.expander("Detalhar (Neuropatia genética)", expanded=True):
-        gen_options = ["PMP22", "MPZ", "GJB1", "MFN2", "outro"]
+        gen_options = ["PMP22", "MPZ", "GJB1", "MFN2", "Outro"]
         dx_genetica_choice = st.radio(
             "Gene / causa (selecione UMA opção)",
             options=gen_options,
             key="dx_genetica_choice",
         )
 
-        if dx_genetica_choice == "outro":
+        if dx_genetica_choice == "Outro":
             st.text_input(
-                "Especifique (outro)",
+                "Especifique:",
                 key="dx_genetica_outro",
                 placeholder="Ex.: SH3TC2, NEFL, TTR, etc.",
             )
@@ -487,16 +487,16 @@ if dx_categoria == "Neuropatia genética":
 # ---- Submenu: Neuropatia imunomediada (single choice) ----
 if dx_categoria == "Neuropatia imunomediada":
     with st.expander("Detalhar (Neuropatia imunomediada)", expanded=True):
-        imuno_options = ["CIDP", "vasculite", "ganglionopatia", "neuropatia motora multifocal", "outros"]
+        imuno_options = ["CIDP", "Vasculite", "Ganglionopatia", "Neuropatia motora multifocal", "Outro"]
         dx_imuno_choice = st.radio(
-            "Subtipo (selecione UMA opção)",
+            "Especifique:",
             options=imuno_options,
             key="dx_imuno_choice",
         )
 
-        if dx_imuno_choice == "outros":
+        if dx_imuno_choice == "Outro":
             st.text_input(
-                "Especifique (outros)",
+                "Especifique",
                 key="dx_imuno_outro",
                 placeholder="Ex.: anti-MAG, AMAN/AMSAN, paraneoplásica, etc.",
             )
@@ -505,7 +505,7 @@ if dx_categoria == "Neuropatia imunomediada":
 summary = dx_categoria
 if dx_categoria == "Neuropatia genética":
     choice = st.session_state.get("dx_genetica_choice", "")
-    if choice == "outro":
+    if choice == "Outro":
         extra = st.session_state.get("dx_genetica_outro", "").strip()
         if extra:
             summary += f" | Gene: {extra}"
@@ -516,12 +516,12 @@ if dx_categoria == "Neuropatia genética":
 
 if dx_categoria == "Neuropatia imunomediada":
     choice = st.session_state.get("dx_imuno_choice", "")
-    if choice == "outros":
+    if choice == "Outro":
         extra = st.session_state.get("dx_imuno_outro", "").strip()
         if extra:
             summary += f" | Subtipo: {extra}"
         else:
-            summary += " | Subtipo: outros (não especificado)"
+            summary += " | Subtipo:"
     elif choice:
         summary += f" | Subtipo: {choice}"
 
