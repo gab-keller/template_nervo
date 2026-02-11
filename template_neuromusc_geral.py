@@ -1,4 +1,8 @@
+pip install streamlit-js-eval
 import streamlit as st
+import json
+import time
+from streamlit_js_eval import streamlit_js_eval
 
 # =========================================================
 # CONFIG + GLOBAL STYLES (same structure as reference model)
@@ -591,7 +595,7 @@ def build_forca_summary() -> str:
 
     if not lines:
         return ""
-    return "Força (MRC): " + " | ".join(lines)
+    return "Força motora (MRC): " + " | ".join(lines)
 
 if st.session_state["forca_open"]:
     st.markdown("#### Força motora (escala MRC)")
@@ -972,7 +976,7 @@ def build_export_text(include_all: bool) -> str:
     if not forca:
         forca = _safe_call(build_forca_summary, "")
     if forca:
-        exf_lines.append("Força motora:\n" + forca)
+        exf_lines.append("" + forca)
 
     nm = _get("exame_neuromuscular_especifico")
     if nm:
