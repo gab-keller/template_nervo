@@ -477,7 +477,7 @@ _ = text_area_lines("", 3, "outras_terapias", placeholder="")
 # =========================================================
 st.subheader("Exame físico")
 
-st.markdown("**Neurológico geral**")
+st.markdown("**Exame neurológico geral**")
 
 _ = text_area_lines(
     label="",
