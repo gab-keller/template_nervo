@@ -275,7 +275,8 @@ descricao_evo = text_area_lines(
 )
 
 # -----------------------------
-# INCAT + PND selector (no st.dialog) - FULL-WIDTH + PND BELOW INCAT
+# INCAT + PND selector (no st.dialog) - FIXED FULL-WIDTH
+# Button on its own line + INCAT box then PND box below
 # -----------------------------
 
 def ll_to_pnd(ll_value: int) -> str:
@@ -290,7 +291,7 @@ def ll_to_pnd(ll_value: int) -> str:
     return "PND IV"  # ll == 5
 
 
-# state init
+# --- state init ---
 if "incat_open" not in st.session_state:
     st.session_state["incat_open"] = False
 if "incat_ul" not in st.session_state:
@@ -300,40 +301,34 @@ if "incat_ll" not in st.session_state:
 if "incat_total" not in st.session_state:
     st.session_state["incat_total"] = ""   # formatted string
 if "pnd_total" not in st.session_state:
-    st.session_state["pnd_total"] = ""     # formatted string like "PND II"
+    st.session_state["pnd_total"] = ""     # "PND II", etc.
 
-# IMPORTANT: keep a wide filler column so the layout spans full width
-c_btn, c_boxes, c_fill = st.columns([1.9, 3.2, 10.0], vertical_alignment="top")
+# --- IMPORTANT: define mrc_keys BEFORE any compute_mrc_ss(mrc_keys) call (fixes NameError) ---
+mrc_keys = [
+    "mrc_ombro_D", "mrc_ombro_E",
+    "mrc_cotovelo_D", "mrc_cotovelo_E",
+    "mrc_punho_D", "mrc_punho_E",
+    "mrc_quadril_D", "mrc_quadril_E",
+    "mrc_joelho_D", "mrc_joelho_E",
+    "mrc_tornozelo_D", "mrc_tornozelo_E",
+]
 
-with c_btn:
-    if st.button("Escala INCAT e PND", key="btn_open_incat"):
-        st.session_state["incat_open"] = True
+# --- Row 1: button alone (prevents width/column compression issues) ---
+if st.button("Escala INCAT e PND", key="btn_open_incat"):
+    st.session_state["incat_open"] = True
 
-with c_boxes:
-    # INCAT display (top)
-    st.text_input(
-        "Escala INCAT (MMSS + MMII)",
-        value=(
-            str(st.session_state["incat_total"])
-            if st.session_state["incat_total"] != ""
-            else "Calculada automaticamente"
-        ),
-        disabled=True,
-    )
+# --- Row 2: outputs stacked (full width) ---
+st.text_input(
+    "Escala INCAT (MMSS + MMII)",
+    value=st.session_state["incat_total"] if st.session_state["incat_total"] else "Calculada automaticamente",
+    disabled=True,
+)
 
-    # PND display (below)
-    st.text_input(
-        "Escala PND",
-        value=(
-            str(st.session_state["pnd_total"])
-            if st.session_state["pnd_total"] != ""
-            else "Calculada automaticamente"
-        ),
-        disabled=True,
-    )
-
-with c_fill:
-    st.empty()
+st.text_input(
+    "Escala PND",
+    value=st.session_state["pnd_total"] if st.session_state["pnd_total"] else "Calculada automaticamente",
+    disabled=True,
+)
 
 
 # "Popup" (conditional panel)
