@@ -1121,3 +1121,170 @@ if export_text:
         mime="text/plain",
         key="download_txt_export",
     )
+
+st.divider()
+
+if st.button("Limpar rascunho salvo neste navegador"):
+    clear_local_draft()
+# =========================================
+# CLIENT-SIDE AUTOSAVE (localStorage + TTL)
+# =========================================
+
+AUTOSAVE_STORAGE_KEY = "nm_template_autosave_v1"
+AUTOSAVE_TTL_SECONDS = 3600  # 1 hour
+
+# ✅ Put ALL widget keys you want persisted here.
+# (Strings, booleans, selectbox values, etc.)
+FORM_KEYS = [
+    # --- Anamnese / antecedentes / evolução ---
+    "Id", "idade_inicio", "hda",
+    "antecedentes_pessoais", "antecedentes_familiares",
+    "meds_em_uso", "meds_previas",
+    "dnpm_radio",
+    "dnpm_sustento_cefalico", "dnpm_engatinhar", "dnpm_andar_sem_apoio",
+    "dnpm_formar_frases", "dnpm_sentar_meses", "dnpm_ficar_de_pe_anos",
+    "dnpm_andar_com_apoio_anos", "dnpm_primeiras_palavras_anos",
+    "dnpm_controle_esfincteriano_meses",
+    "evolucao",
+
+    # --- Funcional (panel) ---
+    "func_modo",
+    "mi_apoio_unilateral", "mi_apoio_bilateral", "mi_pe_sem_passos", "mi_nao_fica_pe",
+    "mi_nao_transfere", "mi_nao_senta", "mi_nao_levanta_chao",
+    "ms_nao_acima_cabeca", "ms_nao_acima_ombros", "ms_nao_flex_antebraco",
+    "ortese_nao_usa", "ortese_mi", "cadeira_rodas", "ortese_ms", "colete_ortopedico", "ortese_outros",
+    "vent_radio", "vent_info_adicional",
+
+    # --- Seguimento multidisciplinar ---
+    "fisio_motora_chk", "fisio_motora_freq",
+    "fisio_resp_chk", "fisio_resp_freq",
+    "ambu_chk", "ambu_freq",
+    "fono_chk", "fono_freq",
+    "to_chk", "to_freq",
+    "psico_chk", "psico_freq",
+    "outras_terapias",
+
+    # --- Exame físico ---
+    "neuro_geral",
+    "exame_neuromuscular_especifico",
+    "pele_clinico_geral",
+    "osteo_dismorfismos",
+
+    # --- Força (MRC) axial + bilaterais (add all your MRC keys) ---
+    "mrc_ext_tronco", "mrc_flex_pescoco", "mrc_flex_tronco",
+    "mrc_abd_ombro_D", "mrc_abd_ombro_E",
+    "mrc_add_ombro_D", "mrc_add_ombro_E",
+    "mrc_ext_cotovelo_D", "mrc_ext_cotovelo_E",
+    "mrc_ext_punho_D", "mrc_ext_punho_E",
+    "mrc_flex_punho_D", "mrc_flex_punho_E",
+    "mrc_ext_dedos_D", "mrc_ext_dedos_E",
+    "mrc_fpd_D", "mrc_fpd_E",
+    "mrc_abd_dedos_D", "mrc_abd_dedos_E",
+    "mrc_op_polegar_D", "mrc_op_polegar_E",
+    "mrc_op_minimo_D", "mrc_op_minimo_E",
+    "mrc_flex_quadril_D", "mrc_flex_quadril_E",
+    "mrc_ext_quadril_D", "mrc_ext_quadril_E",
+    "mrc_abd_quadril_D", "mrc_abd_quadril_E",
+    "mrc_add_quadril_D", "mrc_add_quadril_E",
+    "mrc_flex_joelho_D", "mrc_flex_joelho_E",
+    "mrc_ext_joelho_D", "mrc_ext_joelho_E",
+    "mrc_df_pe_D", "mrc_df_pe_E",
+    "mrc_pf_pe_D", "mrc_pf_pe_E",
+    "mrc_ev_pe_D", "mrc_ev_pe_E",
+    "mrc_inv_pe_D", "mrc_inv_pe_E",
+    "mrc_ext_halux_D", "mrc_ext_halux_E",
+    "mrc_flex_halux_D", "mrc_flex_halux_E",
+
+    # --- Exames complementares ---
+    "ex_cpk", "ex_enmg", "ex_decremento_jitter", "ex_achr", "ex_outros_juncao",
+    "ex_miosites", "ex_rm_muscular", "ex_biopsia_muscular",
+    "ex_eco", "ex_holter", "ex_espirometria", "ex_polissonografia", "ex_outros",
+
+    # --- Genética / diagnósticos / impressão / conduta ---
+    "tg_radio", "tg_gene_sel", "tg_exame_nome", "tg_data", "tg_local",
+    "dx_topografico", "dx_topografico_outro",
+    "dx_noso_sel", "dx_noso_outros",
+    "impressao", "conduta",
+]
+
+def _json_dumps_safe(obj) -> str:
+    return json.dumps(obj, ensure_ascii=False, default=str)
+
+def restore_from_localstorage():
+    """
+    Must be called BEFORE widgets are created.
+    Uses a 2-pass pattern because JS value arrives on the next rerun.
+    """
+    if "_autosave_restore_done" not in st.session_state:
+        st.session_state["_autosave_restore_done"] = False
+
+    raw = streamlit_js_eval(
+        js_expressions=f"localStorage.getItem('{AUTOSAVE_STORAGE_KEY}')",
+        key="__autosave_get",
+    )
+
+    # Second pass: apply once when value becomes available
+    if not st.session_state["_autosave_restore_done"]:
+        if raw:
+            try:
+                blob = json.loads(raw)
+                ts = float(blob.get("_ts", 0))
+                payload = blob.get("payload", {})
+
+                # Expired -> delete
+                if time.time() - ts > AUTOSAVE_TTL_SECONDS:
+                    streamlit_js_eval(
+                        js_expressions=f"localStorage.removeItem('{AUTOSAVE_STORAGE_KEY}')",
+                        key="__autosave_rm_expired",
+                    )
+                else:
+                    # Only set keys that are not already set
+                    for k, v in payload.items():
+                        if k in FORM_KEYS and k not in st.session_state:
+                            st.session_state[k] = v
+
+                    st.session_state["_autosave_restore_done"] = True
+                    st.rerun()
+                    return
+            except Exception:
+                # Corrupted JSON -> remove
+                streamlit_js_eval(
+                    js_expressions=f"localStorage.removeItem('{AUTOSAVE_STORAGE_KEY}')",
+                    key="__autosave_rm_bad",
+                )
+        # Mark done if nothing to restore
+        st.session_state["_autosave_restore_done"] = True
+
+def save_to_localstorage():
+    """
+    Call anywhere (typically near the end of the script).
+    Saves a JSON snapshot + timestamp.
+    """
+    payload = {}
+    for k in FORM_KEYS:
+        if k in st.session_state:
+            payload[k] = st.session_state.get(k)
+
+    blob = {"_ts": time.time(), "payload": payload}
+    raw = _json_dumps_safe(blob)
+
+    # store raw JSON string safely
+    streamlit_js_eval(
+        js_expressions=f"localStorage.setItem('{AUTOSAVE_STORAGE_KEY}', {json.dumps(raw)}); 'ok'",
+        key="__autosave_set",
+    )
+
+def clear_local_draft():
+    streamlit_js_eval(
+        js_expressions=f"localStorage.removeItem('{AUTOSAVE_STORAGE_KEY}'); 'cleared'",
+        key="__autosave_clear",
+    )
+    for k in FORM_KEYS:
+        if k in st.session_state:
+            del st.session_state[k]
+    st.rerun()
+
+# ✅ MUST run before widgets
+restore_from_localstorage()
+save_to_localstorage()
+
