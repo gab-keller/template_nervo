@@ -317,20 +317,17 @@ def request_restore():
 
 def draft_status_line():
     """
-    Shows: 'Último rascunho salvo: 14:32 (há 12 min)'
-    Reads _ts from localStorage.
+    Lightweight: reads localStorage without forcing reruns.
+    Shows last saved time if available.
     """
-    nonce = str(st.session_state.get("_draft_status_nonce", "init"))
-
     raw = streamlit_js_eval(
         js_expressions=f"localStorage.getItem('{AUTOSAVE_STORAGE_KEY}')",
-        key=f"__draft_status_get_{nonce}",
+        key="__draft_status_get",  # ✅ stable key
     )
 
-    # Two-pass: first run raw is None, next run returns the value
+    # If JS hasn't returned yet, just show nothing (no rerun loop)
     if raw is None:
-        st.session_state["_draft_status_nonce"] = str(time.time())
-        st.rerun()
+        st.caption("Status do rascunho: carregando…")
         return
 
     if not raw:
@@ -344,24 +341,14 @@ def draft_status_line():
             st.caption("Nenhum rascunho salvo neste navegador.")
             return
 
-        # expired?
         age = time.time() - ts
         if age > AUTOSAVE_TTL_SECONDS:
             st.caption("Rascunho salvo anteriormente, mas já expirou (mais de 1 hora).")
             return
 
-        # format time
         saved_hm = time.strftime("%H:%M", time.localtime(ts))
-
-        # humanize age
         mins = int(age // 60)
-        if mins < 1:
-            ago = "há poucos segundos"
-        elif mins < 60:
-            ago = f"há {mins} min"
-        else:
-            hrs = mins // 60
-            ago = f"há {hrs} h"
+        ago = "há poucos segundos" if mins < 1 else (f"há {mins} min" if mins < 60 else f"há {mins//60} h")
 
         st.caption(f"Último rascunho salvo: {saved_hm} ({ago}).")
 
@@ -1371,7 +1358,6 @@ with c3:
     if st.button("💾 Salvar agora", key="btn_manual_save_draft", type="primary"):
         save_to_localstorage()
         st.success("Rascunho salvo neste navegador.")
-        st.session_state["_draft_status_nonce"] = str(time.time())  # refresh status
 
 # ✅ small line under buttons
 draft_status_line()
