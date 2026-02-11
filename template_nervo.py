@@ -155,16 +155,31 @@ if esporadico and familiar:
 st.subheader("Medicações modificadoras de doença/Imunossupressores")
 st.markdown("**Tratamento atual:**")
 
-t1 = st.checkbox("em uso de tratamento medicamentoso", key="trat_em_uso")
-if t1:
-    _ = inline_label_input("há quanto tempo", key="trat_em_uso_tempo", placeholder="Ex.: 6 meses / 2 anos")
+tratamento_atual = st.radio(
+    "",
+    options=[
+        "em uso de tratamento medicamentoso",
+        "sem tratamento medicamentoso",
+        "não informado",
+    ],
+    index=2,
+    key="tratamento_atual_radio",
+)
 
-t2 = st.checkbox("sem tratamento medicamentoso", key="trat_sem")
-if t2:
-    _ = inline_label_input("há quanto tempo", key="trat_sem_tempo", placeholder="Ex.: 3 meses / desde 2021")
+if tratamento_atual == "em uso de tratamento medicamentoso":
+    _ = inline_label_input(
+        "há quanto tempo",
+        key="trat_em_uso_tempo",
+        placeholder="Ex.: 6 meses / 2 anos",
+    )
 
-if t1 and t2:
-    st.warning("Você marcou **em uso** e **sem tratamento** ao mesmo tempo. Se quiser, mantenha apenas uma opção.")
+elif tratamento_atual == "sem tratamento medicamentoso":
+    _ = inline_label_input(
+        "há quanto tempo",
+        key="trat_sem_tempo",
+        placeholder="Ex.: 3 meses / desde 2021",
+    )
+
 
 st.markdown("**Medicamentos de uso atual ou prévio, com data de início, data de término e motivo da suspensão**")
 meds_atual_previo = text_area_lines(
@@ -188,16 +203,26 @@ transplantado = st.checkbox("Paciente transplantado", key="paciente_transplantad
 # 5) Evolução clínica
 # -----------------------------
 st.subheader("Evolução clínica")
+
 st.markdown("**Controle atual:**")
 
-estavel = st.checkbox("estável ou melhorando", key="evo_estavel")
-if estavel:
-    _ = inline_label_input("há quanto tempo", key="evo_estavel_tempo", placeholder="Ex.: 2 meses")
+controle_atual = st.radio(
+    "",
+    options=[
+        "estável ou melhorando",
+        "piorando",
+        "não informado",
+    ],
+    index=2,
+    key="controle_atual_radio",
+)
 
-piorando = st.checkbox("piorando", key="evo_piorando")
-
-if estavel and piorando:
-    st.warning("Você marcou **estável ou melhorando** e **piorando** ao mesmo tempo. Se quiser, mantenha apenas uma opção.")
+if controle_atual == "estável ou melhorando":
+    _ = inline_label_input(
+        "há quanto tempo",
+        key="evo_estavel_tempo",
+        placeholder="Ex.: 2 meses",
+    )
 
 st.markdown("**Descrição da evolução:**")
 descricao_evo = text_area_lines(
