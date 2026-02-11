@@ -164,7 +164,14 @@ if "export_text" not in st.session_state:
 # =========================================================
 st.subheader("Anamnese")
 
-_ = inline_label_input("Idade de início", key="idade_inicio", placeholder="Ex.: 12 anos / 2021 / infância")
+st.markdown("**Identificação:**")
+_ = text_area_lines(
+    label="",
+    lines=1,
+    key="Id",
+    placeholder="",
+    
+_ = inline_label_input("**Idade de início**", key="idade_inicio", placeholder="Ex.: 12 anos / 2021 / infância")
 
 st.markdown("**História da doença atual:**")
 _ = text_area_lines(
