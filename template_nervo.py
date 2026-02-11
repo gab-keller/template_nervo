@@ -774,7 +774,15 @@ def build_export_text(include_all: bool) -> str:
 
 # --- UI: choose export mode (switchable) ---
 st.divider()
-st.subheader("Exportação")
+st.subheader("Exportação (copiar e colar no Notepad)")
+
+# >>> ADD THIS LINE <<<
+st.markdown(
+    "<div style='background:#f5f5f5; padding:8px; border-radius:6px; font-size:14px;'>"
+    "Funções a seguir disponíveis exclusivamente para fase de testes do template"
+    "</div>",
+    unsafe_allow_html=True,
+)
 
 if "export_mode" not in st.session_state:
     st.session_state["export_mode"] = None  # "evolucao" | "completo" | None
