@@ -43,6 +43,50 @@ def inline_label_input(label_text: str, key: str, placeholder: str = ""):
     with c_input:
         return st.text_input("", key=key, placeholder=placeholder, label_visibility="collapsed")
 
+def inline_label_display(label_text: str, value: str):
+    """
+    Label + disabled display box in the same row.
+    No key on the text_input so it always reflects the provided value.
+    """
+    c_label, c_box, _fill = st.columns([3.2, 3.0, 10.0], vertical_alignment="center")
+    with c_label:
+        st.markdown(f'<div class="inline-label">{label_text}</div>', unsafe_allow_html=True)
+    with c_box:
+        st.text_input("", value=value, disabled=True, label_visibility="collapsed")
+
+
+def compute_mrc_ss(mrc_keys: list[str]) -> tuple[str, int | None]:
+    """
+    Returns (display_string, numeric_total_or_None)
+    - display_string: "" if incomplete, else str(total)
+    """
+    values = []
+    for k in mrc_keys:
+        v = st.session_state.get(k, "")
+        if v is None or str(v).strip() == "":
+            return ("", None)  # incomplete => blank
+        try:
+            iv = int(str(v).strip())
+        except ValueError:
+            return ("", None)
+        if iv < 0 or iv > 5:
+            return ("", None)
+        values.append(iv)
+    total = sum(values)
+    return (str(total), total)
+
+
+def small_mrc_box(key: str):
+    """
+    Small numeric textbox (0–5) that can be left blank initially.
+    """
+    return st.text_input(
+        "",
+        key=key,
+        placeholder="0-5",
+        label_visibility="collapsed",
+        max_chars=1,
+    )
 
 
 # -----------------------------
@@ -249,3 +293,77 @@ if st.session_state["incat_open"]:
         if st.button("Cancelar", key="btn_cancel_incat"):
             st.session_state["incat_open"] = False
             st.rerun()
+
+# ---- MRC-SS display (right after INCAT) ----
+mrc_keys = [
+    "mrc_ombro_D", "mrc_ombro_E",
+    "mrc_cotovelo_D", "mrc_cotovelo_E",
+    "mrc_punho_D", "mrc_punho_E",
+    "mrc_quadril_D", "mrc_quadril_E",
+    "mrc_joelho_D", "mrc_joelho_E",
+    "mrc_tornozelo_D", "mrc_tornozelo_E",
+]
+
+mrc_display, mrc_total = compute_mrc_ss(mrc_keys)
+
+inline_label_display("Escala MRC-SS", mrc_display)
+
+st.markdown("**Outras escalas e métricas de seguimento**")
+_ = text_area_lines(
+    label="",
+    lines=5,
+    key="outras_escalas_seguimento",
+    placeholder="NIS, dinamometria, tempo de marcha, TUG",
+)
+
+# -----------------------------
+# 6) Exame físico neurológico
+# -----------------------------
+st.subheader("Exame físico neurológico")
+
+_ = text_area_lines(
+    label="",
+    lines=5,
+    key="exame_fisico_neuro_texto",
+    placeholder="Força, tônus, reflexo, equilíbrio, sensibilidade, nervos cranianos, alterações autonômicas, cognição",
+)
+
+st.markdown("### MRC")
+
+# Header row
+h0, h1, h2, _hf = st.columns([3.2, 1.4, 1.4, 10.0], vertical_alignment="center")
+with h0:
+    st.markdown("**Grupo muscular**")
+with h1:
+    st.markdown("**Direito**")
+with h2:
+    st.markdown("**Esquerdo**")
+
+def mrc_row(label: str, key_d: str, key_e: str):
+    c0, c1, c2, _fill = st.columns([3.2, 1.4, 1.4, 10.0], vertical_alignment="center")
+    with c0:
+        st.markdown(f'<div class="inline-label">{label}</div>', unsafe_allow_html=True)
+    with c1:
+        small_mrc_box(key_d)
+    with c2:
+        small_mrc_box(key_e)
+
+mrc_row("Abdução do ombro:", "mrc_ombro_D", "mrc_ombro_E")
+mrc_row("Flexão do cotovelo:", "mrc_cotovelo_D", "mrc_cotovelo_E")
+mrc_row("Extensão do punho:", "mrc_punho_D", "mrc_punho_E")
+mrc_row("Flexão do quadril:", "mrc_quadril_D", "mrc_quadril_E")
+mrc_row("Extensão do joelho:", "mrc_joelho_D", "mrc_joelho_E")
+mrc_row("Dorsiflexão do tornozelo:", "mrc_tornozelo_D", "mrc_tornozelo_E")
+
+# Live computed MRC-SS info line (optional; the official display is up in Evolução clínica)
+mrc_display_live, _ = compute_mrc_ss(mrc_keys)
+if mrc_display_live != "":
+    st.caption(f"MRC-SS calculado: {mrc_display_live} (soma dos 12 valores)")
+
+st.markdown("### Deformidades osteoesqueléticas e exame clínico geral")
+_ = text_area_lines(
+    label="",
+    lines=3,
+    key="deformidades_osteo_texto",
+    placeholder="Retrações tendíneas, pé cavo, escoliose, etc.",
+)
