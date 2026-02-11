@@ -223,12 +223,12 @@ if dnpm == "Atraso desenvolvimento":
         _ = inline_label_input("Engatinhar", key="dnpm_engatinhar", placeholder="Ex.: 10 meses")
         _ = inline_label_input("Andar sem apoio", key="dnpm_andar_sem_apoio", placeholder="Ex.: 18 meses")
         _ = inline_label_input("Formar frases", key="dnpm_formar_frases", placeholder="Ex.: 3 anos")
-        _ = inline_label_input("Sentar (meses)", key="dnpm_sentar_meses", placeholder="Ex.: 8")
+        _ = inline_label_input("Sentar", key="dnpm_sentar_meses", placeholder="Ex.: 8")
     with r1c2:
-        _ = inline_label_input("Ficar de pé (anos)", key="dnpm_ficar_de_pe_anos", placeholder="Ex.: 2")
-        _ = inline_label_input("Andar com apoio (anos)", key="dnpm_andar_com_apoio_anos", placeholder="Ex.: 2")
-        _ = inline_label_input("Primeiras palavras (anos)", key="dnpm_primeiras_palavras_anos", placeholder="Ex.: 2")
-        _ = inline_label_input("Controle esfincteriano (meses)", key="dnpm_controle_esfincteriano_meses", placeholder="Ex.: 30")
+        _ = inline_label_input("Ficar de pé", key="dnpm_ficar_de_pe_anos", placeholder="Ex.: 2")
+        _ = inline_label_input("Andar com apoio", key="dnpm_andar_com_apoio_anos", placeholder="Ex.: 2")
+        _ = inline_label_input("Primeiras palavras", key="dnpm_primeiras_palavras_anos", placeholder="Ex.: 2")
+        _ = inline_label_input("Controle esfincteriano", key="dnpm_controle_esfincteriano_meses", placeholder="Ex.: 30")
 
 # =========================================================
 # 4) NEUROLÓGICO GERAL + EXAME DE FORÇA (panel)
@@ -256,7 +256,13 @@ with c_right:
     display_forca = st.session_state.get("forca_resumo", "").strip()
     if not display_forca:
         display_forca = "Gerado automaticamente ao preencher o exame de força"
-    st.text_input("Força motora (resumo)", value=display_forca, disabled=True)
+    st.text_area(
+        "Força motora (resumo)",
+        value=display_forca,
+        height=120,   # ~4–5 lines
+        disabled=True,
+    )
+
 
 # --------------------------
 # FORCE PANEL
@@ -277,18 +283,6 @@ def _force_row_single(label: str, key: str, placeholder: str = "0-5"):
     with c1:
         st.text_input("", key=key, placeholder=placeholder, label_visibility="collapsed", max_chars=1)
 
-def _force_row_trunk_flexion(key: str):
-    c0, c1, _fill = st.columns([3.2, 3.0, 10.0], vertical_alignment="center")
-    with c0:
-        st.markdown('<div class="inline-label">Flexores do tronco</div>', unsafe_allow_html=True)
-    with c1:
-        st.radio(
-            "",
-            options=[0, 1, 2, 3, 4, 5],
-            horizontal=True,
-            key=key,
-            index=None,
-        )
 
 def build_forca_summary() -> str:
     """
@@ -315,9 +309,11 @@ def build_forca_summary() -> str:
     v_flex_pescoco = _get("mrc_flex_pescoco")
     if v_flex_pescoco:
         axial.append(f"Flexores do pescoço {v_flex_pescoco}")
-    v_flex_tronco = st.session_state.get("mrc_flex_tronco_radio", None)
-    if v_flex_tronco is not None and str(v_flex_tronco).strip() != "":
+    v_flex_tronco = _get("mrc_flex_tronco")
+    if v_flex_tronco:
         axial.append(f"Flexores do tronco {v_flex_tronco}")
+    
+
 
     if axial:
         lines.append("Axiais: " + " | ".join(axial))
@@ -358,7 +354,7 @@ if st.session_state["forca_open"]:
     st.markdown("**Músculos axiais:**")
     _force_row_single("Extensores do tronco", "mrc_ext_tronco", placeholder="0-5")
     _force_row_single("Flexores do pescoço", "mrc_flex_pescoco", placeholder="0-5")
-    _force_row_trunk_flexion("mrc_flex_tronco_radio")
+    _force_row_single("Flexores do tronco", "mrc_flex_tronco", placeholder="0-5")
 
     st.markdown("---")
     st.markdown("**Músculos dos membros superiores:**")
@@ -477,47 +473,86 @@ with cR:
     st.text_input("Limitações motoras (resumo)", value=disp, disabled=True)
 
 def build_func_summary() -> str:
-    modo = _get("func_modo")
-    if not modo:
-        return ""
-    if modo == "Sem limitações":
-        return "Sem limitações motoras atuais."
-
-    # Com limitações
-    mi = []
-    ms = []
-
-    mi_map = [
-        ("Anda com apoio unilateral", "mi_apoio_unilateral"),
-        ("Anda com apoio bilateral", "mi_apoio_bilateral"),
-        ("Fica de pé mas não troca passos", "mi_pe_sem_passos"),
-        ("Não fica de pé sem suporte", "mi_nao_fica_pe"),
-        ("Não faz transferências sem ajuda", "mi_nao_transfere"),
-        ("Não senta sem suporte", "mi_nao_senta"),
-        ("Não levanta do chão sem ajuda", "mi_nao_levanta_chao"),
-    ]
-    ms_map = [
-        ("Não eleva os braços acima da cabeça", "ms_nao_acima_cabeca"),
-        ("Não eleva os braços acima dos ombros", "ms_nao_acima_ombros"),
-        ("Não faz flexão dos antebraços", "ms_nao_flex_antebraco"),
-    ]
-
-    for lbl, k in mi_map:
-        if st.session_state.get(k):
-            mi.append(lbl)
-    for lbl, k in ms_map:
-        if st.session_state.get(k):
-            ms.append(lbl)
-
     parts = []
-    if mi:
-        parts.append("MMII: " + "; ".join(mi))
-    if ms:
-        parts.append("MMSS: " + "; ".join(ms))
-    if not parts:
-        parts.append("Com limitações (não detalhadas).")
 
-    return " | ".join(parts)
+    # -------------------------
+    # 1) Limitações motoras
+    # -------------------------
+    modo = _get("func_modo")
+    if modo == "Sem limitações":
+        parts.append("Sem limitações motoras atuais.")
+    elif modo == "Com limitações":
+        mi = []
+        ms = []
+
+        mi_map = [
+            ("Anda com apoio unilateral", "mi_apoio_unilateral"),
+            ("Anda com apoio bilateral", "mi_apoio_bilateral"),
+            ("Fica de pé mas não troca passos", "mi_pe_sem_passos"),
+            ("Não fica de pé sem suporte", "mi_nao_fica_pe"),
+            ("Não faz transferências sem ajuda", "mi_nao_transfere"),
+            ("Não senta sem suporte", "mi_nao_senta"),
+            ("Não levanta do chão sem ajuda", "mi_nao_levanta_chao"),
+        ]
+        ms_map = [
+            ("Não eleva os braços acima da cabeça", "ms_nao_acima_cabeca"),
+            ("Não eleva os braços acima dos ombros", "ms_nao_acima_ombros"),
+            ("Não faz flexão dos antebraços", "ms_nao_flex_antebraco"),
+        ]
+
+        for lbl, k in mi_map:
+            if st.session_state.get(k):
+                mi.append(lbl)
+        for lbl, k in ms_map:
+            if st.session_state.get(k):
+                ms.append(lbl)
+
+        lim_parts = []
+        if mi:
+            lim_parts.append("MMII: " + "; ".join(mi))
+        if ms:
+            lim_parts.append("MMSS: " + "; ".join(ms))
+        if lim_parts:
+            parts.append("Limitações: " + " | ".join(lim_parts))
+        else:
+            parts.append("Limitações: Com limitações (não detalhadas).")
+
+    # If modo is not chosen, don't add anything (keeps summary optional)
+
+    # -------------------------
+    # 2) Órteses / cadeira (optional)
+    # -------------------------
+    ort = []
+    for lbl, k in [
+        ("Não usa", "ortese_nao_usa"),
+        ("Órteses MMII", "ortese_mi"),
+        ("Cadeira de rodas", "cadeira_rodas"),
+        ("Órteses MMSS", "ortese_ms"),
+        ("Colete ortopédico", "colete_ortopedico"),
+    ]:
+        if st.session_state.get(k):
+            ort.append(lbl)
+
+    ort_outros = _get("ortese_outros")
+    if ort_outros:
+        ort.append(f"Outros: {ort_outros}")
+
+    if ort:
+        parts.append("Órteses/CR: " + "; ".join(ort))
+
+    # -------------------------
+    # 3) Ventilação (optional)
+    # -------------------------
+    vent_line = _get("vent_radio")
+    vent_info = _get("vent_info_adicional")
+    if vent_line or vent_info:
+        vent_txt = vent_line if vent_line else ""
+        if vent_info:
+            vent_txt += (" — " if vent_txt else "") + vent_info
+        parts.append("Ventilação: " + vent_txt)
+
+    return " \n".join([p for p in parts if p.strip()]).strip()
+
 
 if st.session_state["func_open"]:
     st.markdown("#### Limitações motoras atuais")
@@ -545,6 +580,37 @@ if st.session_state["func_open"]:
         st.checkbox("Não eleva os braços acima dos ombros", key="ms_nao_acima_ombros")
         st.checkbox("Não faz flexão dos antebraços", key="ms_nao_flex_antebraco")
 
+    st.markdown("---")
+    st.markdown("### Uso de órteses e/ou cadeira de rodas")
+
+    st.checkbox("Não usa", key="ortese_nao_usa")
+    st.checkbox("Usa órteses para membros inferiores", key="ortese_mi")
+    st.checkbox("Usa cadeira de rodas", key="cadeira_rodas")
+    st.checkbox("Usa órteses para membros superiores", key="ortese_ms")
+    st.checkbox("Usa colete ortopédico", key="colete_ortopedico")
+    _ = inline_label_input("Outros", key="ortese_outros", placeholder="Especifique")
+
+    st.markdown("---")
+    st.markdown("### Uso de suporte ventilatório")
+
+    vent_options = [
+        "Sem indicação",
+        "Tem indicação de BiPAP, mas não faz uso",
+        "BiPAP – uso noturno",
+        "BiPAP – uso diurno e noturno",
+        "Traqueostomia",
+        "Ventilação invasiva permanente",
+    ]
+    st.radio("", options=vent_options, index=None, key="vent_radio")
+
+    _ = text_area_lines(
+        label="",
+        lines=3,
+        key="vent_info_adicional",
+        placeholder="Informações adicionais (tempo diário de ventilação, equipamento, parâmetros).",
+    )
+
+    
     b1, b2, _bf = st.columns([1.6, 1.2, 10.0], vertical_alignment="center")
     with b1:
         if st.button("Salvar limitações", key="btn_save_func", type="primary"):
@@ -586,39 +652,6 @@ freq_row("Psicoterapia", "psico_chk", "psico_freq")
 st.markdown("**Outras terapias e informações:**")
 _ = text_area_lines("", 3, "outras_terapias", placeholder="")
 
-# =========================================================
-# 10) ÓRTESES / CADEIRA DE RODAS
-# =========================================================
-st.subheader("Uso de órteses e/ou cadeira de rodas")
-
-st.checkbox("Não usa", key="ortese_nao_usa")
-st.checkbox("Usa órteses para membros inferiores", key="ortese_mi")
-st.checkbox("Usa cadeira de rodas", key="cadeira_rodas")
-st.checkbox("Usa órteses para membros superiores", key="ortese_ms")
-st.checkbox("Usa colete ortopédico", key="colete_ortopedico")
-_ = inline_label_input("Outros", key="ortese_outros", placeholder="Especifique")
-
-# =========================================================
-# 11) SUPORTE VENTILATÓRIO
-# =========================================================
-st.subheader("Uso de suporte ventilatório")
-
-vent_options = [
-    "Sem indicação",
-    "Tem indicação de BiPAP, mas não faz uso",
-    "BiPAP – uso noturno",
-    "BiPAP – uso diurno e noturno",
-    "Traqueostomia",
-    "Ventilação invasiva permanente",
-]
-vent = st.radio("", options=vent_options, index=None, key="vent_radio")
-
-_ = text_area_lines(
-    label="",
-    lines=3,
-    key="vent_info_adicional",
-    placeholder="Informações adicionais, se necessário (tempo diário de ventilação, equipamento usado, parâmetros atuais).",
-)
 
 # =========================================================
 # 12) EXAMES COMPLEMENTARES
@@ -773,3 +806,224 @@ _ = text_area_lines("", 4, "impressao", placeholder="")
 
 st.subheader("Conduta")
 _ = text_area_lines("", 4, "conduta", placeholder="")
+
+# =========================================================
+# EXPORT (same structure as reference)
+# =========================================================
+def build_export_text(include_all: bool) -> str:
+    parts = []
+
+    if include_all:
+        # Anamnese
+        parts.append(_section("ANAMNESE",
+                              f"Idade de início: {_get('idade_inicio')}\n"
+                              f"História da doença atual:\n{_get('hda')}\n\n"
+                              f"Evolução:\n{_get('evolucao')}"))
+
+        # Antecedentes
+        parts.append(_section("ANTECEDENTES",
+                              f"Antecedentes pessoais:\n{_get('antecedentes_pessoais')}\n\n"
+                              f"Medicações em uso:\n{_get('meds_em_uso')}\n\n"
+                              f"Medicações prévias / motivo suspensão:\n{_get('meds_previas')}"))
+
+        # DNPM
+        dnpm_radio = _get("dnpm_radio")
+        dnpm_block = f"Status: {dnpm_radio}" if dnpm_radio else ""
+        if dnpm_radio == "Atraso desenvolvimento":
+            milestones = []
+            for lbl, k in [
+                ("Sustento cefálico", "dnpm_sustento_cefalico"),
+                ("Engatinhar", "dnpm_engatinhar"),
+                ("Andar sem apoio", "dnpm_andar_sem_apoio"),
+                ("Formar frases", "dnpm_formar_frases"),
+                ("Sentar (meses)", "dnpm_sentar_meses"),
+                ("Ficar de pé (anos)", "dnpm_ficar_de_pe_anos"),
+                ("Andar com apoio (anos)", "dnpm_andar_com_apoio_anos"),
+                ("Primeiras palavras (anos)", "dnpm_primeiras_palavras_anos"),
+                ("Controle esfincteriano (meses)", "dnpm_controle_esfincteriano_meses"),
+            ]:
+                v = _get(k)
+                if v:
+                    milestones.append(f"{lbl}: {v}")
+            if milestones:
+                dnpm_block = (dnpm_block + "\n" if dnpm_block else "") + "Marcos:\n" + "\n".join(milestones)
+        parts.append(_section("DESENVOLVIMENTO NEUROPSICOMOTOR", dnpm_block))
+
+    # Neurológico
+    neuro_parts = []
+    if _get("neuro_geral"):
+        neuro_parts.append(_get("neuro_geral"))
+    if _get("forca_resumo"):
+        neuro_parts.append(_get("forca_resumo"))
+    parts.append(_section("NEUROLÓGICO", "\n\n".join([p for p in neuro_parts if p.strip()])))
+
+    # Exame NM específico
+    parts.append(_section("EXAME NEUROMUSCULAR ESPECÍFICO", _get("exame_neuromuscular_especifico")))
+
+    # Pele / Geral
+    parts.append(_section("PELE E EXAME CLÍNICO GERAL", _get("pele_clinico_geral")))
+
+    # Osteo/dismorfismos
+    parts.append(_section("OSTEOESQUELÉTICAS / DISMORFISMOS", _get("osteo_dismorfismos")))
+
+    # Funcional + multidisciplinar + órteses + ventilação
+    func_block = _get("func_resumo")
+    parts.append(_section("AVALIAÇÃO FUNCIONAL", func_block))
+
+    # Multidisciplinar
+    multi_lines = []
+    def add_freq(name, chk, freq):
+        if st.session_state.get(chk):
+            f = _get(freq)
+            multi_lines.append(f"{name}: {f + 'x/sem' if f else '(freq. não informada)'}")
+    add_freq("Fisioterapia motora", "fisio_motora_chk", "fisio_motora_freq")
+    add_freq("Fisioterapia respiratória", "fisio_resp_chk", "fisio_resp_freq")
+    add_freq("Ambú / máscara facial", "ambu_chk", "ambu_freq")
+    add_freq("Fonoterapia", "fono_chk", "fono_freq")
+    add_freq("Terapia ocupacional", "to_chk", "to_freq")
+    add_freq("Psicoterapia", "psico_chk", "psico_freq")
+    outras = _get("outras_terapias")
+    if outras:
+        multi_lines.append("Outras:\n" + outras)
+    parts.append(_section("SEGUIMENTO MULTIDISCIPLINAR", "\n".join(multi_lines)))
+
+    # Órteses
+    ort_lines = []
+    for lbl, k in [
+        ("Não usa", "ortese_nao_usa"),
+        ("Órteses MMII", "ortese_mi"),
+        ("Cadeira de rodas", "cadeira_rodas"),
+        ("Órteses MMSS", "ortese_ms"),
+        ("Colete ortopédico", "colete_ortopedico"),
+    ]:
+        if st.session_state.get(k):
+            ort_lines.append(lbl)
+    ort_outros = _get("ortese_outros")
+    if ort_outros:
+        ort_lines.append(f"Outros: {ort_outros}")
+    parts.append(_section("ÓRTESES / CADEIRA DE RODAS", "; ".join(ort_lines)))
+
+    # Ventilação
+    vent_line = _get("vent_radio")
+    vent_info = _get("vent_info_adicional")
+    vent_block = ""
+    if vent_line:
+        vent_block += vent_line
+    if vent_info:
+        vent_block += ("\n" if vent_block else "") + vent_info
+    parts.append(_section("SUPORTE VENTILATÓRIO", vent_block))
+
+    # Exames
+    ex_lines = []
+    if _get("ex_cpk"):
+        ex_lines.append(f"CPK: {_get('ex_cpk')}")
+    if _get("ex_enmg"):
+        ex_lines.append("ENMG:\n" + _get("ex_enmg"))
+    if _get("ex_decremento_jitter"):
+        ex_lines.append(f"Decremento/Jitter: {_get('ex_decremento_jitter')}")
+    if _get("ex_achr"):
+        ex_lines.append(f"Anti-AChR: {_get('ex_achr')}")
+    if _get("ex_outros_juncao"):
+        ex_lines.append(f"Outros anticorpos junção: {_get('ex_outros_juncao')}")
+    if _get("ex_miosites"):
+        ex_lines.append(f"Anticorpos miosites: {_get('ex_miosites')}")
+    if _get("ex_rm_muscular"):
+        ex_lines.append("RM muscular:\n" + _get("ex_rm_muscular"))
+    if _get("ex_biopsia_muscular"):
+        ex_lines.append("Biópsia muscular:\n" + _get("ex_biopsia_muscular"))
+    for lbl, k in [
+        ("ECO", "ex_eco"),
+        ("Holter", "ex_holter"),
+        ("Espirometria", "ex_espirometria"),
+        ("Polissonografia", "ex_polissonografia"),
+        ("Outros", "ex_outros"),
+    ]:
+        if _get(k):
+            ex_lines.append(f"{lbl}:\n{_get(k)}")
+    parts.append(_section("EXAMES COMPLEMENTARES", "\n\n".join(ex_lines)))
+
+    # Dx topográfico + genético + nosológico
+    dx_lines = []
+    topo_txt = _get("dx_topografico")
+    if topo_txt:
+        if topo_txt == "Outro":
+            topo_txt = _get("dx_topografico_outro") or "Outro (não especificado)"
+        dx_lines.append(f"Topográfico: {topo_txt}")
+
+    tg_radio = _get("tg_radio")
+    if tg_radio:
+        dx_lines.append(f"Teste genético: {tg_radio}")
+        if tg_radio == "Teste genético realizado":
+            dx_lines.append(f"Gene/resultado: {_get('tg_gene_sel')}")
+            det = []
+            if _get("tg_exame_nome"):
+                det.append(f"Exame: {_get('tg_exame_nome')}")
+            if _get("tg_data"):
+                det.append(f"Data: {_get('tg_data')}")
+            if _get("tg_local"):
+                det.append(f"Local: {_get('tg_local')}")
+            if det:
+                dx_lines.append("Detalhes: " + " | ".join(det))
+
+    noso = _get("dx_noso_sel")
+    if noso:
+        if noso == "Outros":
+            noso = _get("dx_noso_outros") or "Outros (não especificado)"
+        dx_lines.append(f"Nosológico: {noso}")
+
+    parts.append(_section("DIAGNÓSTICO", "\n".join(dx_lines)))
+
+    # Impressão + Conduta
+    parts.append(_section("IMPRESSÃO", _get("impressao")))
+    parts.append(_section("CONDUTA", _get("conduta")))
+
+    cleaned = [p for p in parts if p.strip()]
+    return "\n".join(cleaned).strip() + "\n"
+
+# --- UI export ---
+st.divider()
+st.subheader("Exportar texto acima")
+
+st.markdown(
+    "<div style='background:#f5f5f5; padding:8px; border-radius:6px; font-size:14px;'>"
+    "Funções a seguir disponíveis exclusivamente para fase de testes do template"
+    "</div>",
+    unsafe_allow_html=True,
+)
+
+c_exp1, c_exp2, c_exp3 = st.columns([1.2, 1.8, 1.2], vertical_alignment="center")
+with c_exp1:
+    if st.button("Exportar evolução", key="btn_export_evolucao"):
+        st.session_state["export_mode"] = "evolucao"
+with c_exp2:
+    if st.button("Exportar histórico completo", key="btn_export_completo"):
+        st.session_state["export_mode"] = "completo"
+with c_exp3:
+    if st.button("Trocar modalidade de exportação", key="btn_clear_export"):
+        st.session_state["export_mode"] = None
+        st.session_state["export_text"] = ""
+        st.rerun()
+
+mode = st.session_state.get("export_mode")
+if mode == "evolucao":
+    st.session_state["export_text"] = build_export_text(include_all=False)
+elif mode == "completo":
+    st.session_state["export_text"] = build_export_text(include_all=True)
+else:
+    st.session_state["export_text"] = ""
+
+export_text = st.session_state.get("export_text", "")
+if export_text:
+    st.text_area(
+        "Texto para copiar (Ctrl+A, Ctrl+C)",
+        value=export_text,
+        height=320,
+        key="export_text_area",
+    )
+    st.download_button(
+        "Baixar .txt",
+        data=export_text.encode("utf-8"),
+        file_name="template_neuromuscular_geral_export.txt",
+        mime="text/plain",
+        key="download_txt_export",
+    )
