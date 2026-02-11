@@ -565,6 +565,7 @@ def build_forca_summary() -> str:
     # Upper
     add_bilat("Abdução do ombro", "mrc_abd_ombro_D", "mrc_abd_ombro_E")
     add_bilat("Adução do ombro", "mrc_add_ombro_D", "mrc_add_ombro_E")
+    add_bilat("Flexores do cotovelo", "mrc_flex_cotovelo_D", "mrc_flex_cotovelo_E")
     add_bilat("Extensores do cotovelo", "mrc_ext_cotovelo_D", "mrc_ext_cotovelo_E")
     add_bilat("Extensores de punho", "mrc_ext_punho_D", "mrc_ext_punho_E")
     add_bilat("Flexores de punho", "mrc_flex_punho_D", "mrc_flex_punho_E")
