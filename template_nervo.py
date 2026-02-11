@@ -275,7 +275,7 @@ descricao_evo = text_area_lines(
 )
 
 # -----------------------------
-# INCAT + PND selector (no st.dialog) - AUTO-UPDATES DISPLAY
+# INCAT + PND selector (no st.dialog) - FULL-WIDTH + PND BELOW INCAT
 # -----------------------------
 
 def ll_to_pnd(ll_value: int) -> str:
@@ -302,16 +302,15 @@ if "incat_total" not in st.session_state:
 if "pnd_total" not in st.session_state:
     st.session_state["pnd_total"] = ""     # formatted string like "PND II"
 
+# IMPORTANT: keep a wide filler column so the layout spans full width
+c_btn, c_boxes, c_fill = st.columns([1.9, 3.2, 10.0], vertical_alignment="top")
 
-c_incat_btn, c_incat_box1, c_incat_box2, _f = st.columns(
-    [1.9, 2.6, 2.0, 10.0], vertical_alignment="center"
-)
-
-with c_incat_btn:
+with c_btn:
     if st.button("Escala INCAT e PND", key="btn_open_incat"):
         st.session_state["incat_open"] = True
 
-with c_incat_box1:
+with c_boxes:
+    # INCAT display (top)
     st.text_input(
         "Escala INCAT (MMSS + MMII)",
         value=(
@@ -322,7 +321,7 @@ with c_incat_box1:
         disabled=True,
     )
 
-with c_incat_box2:
+    # PND display (below)
     st.text_input(
         "Escala PND",
         value=(
@@ -332,6 +331,9 @@ with c_incat_box2:
         ),
         disabled=True,
     )
+
+with c_fill:
+    st.empty()
 
 
 # "Popup" (conditional panel)
@@ -396,7 +398,7 @@ if st.session_state["incat_open"]:
     st.markdown(f"**MMSS ({ul}) + MMII ({ll}) = {total}**")
     st.markdown(f"**PND: {pnd}**")
 
-    b1, b2, _bfill = st.columns([1.2, 1.0, 10.0])
+    b1, b2, _bfill = st.columns([1.4, 1.0, 10.0])
     with b1:
         if st.button("Salvar INCAT/PND", key="btn_save_incat", type="primary"):
             st.session_state["incat_total"] = f"MMSS ({ul}) + MMII ({ll}) = {total}"
@@ -408,25 +410,6 @@ if st.session_state["incat_open"]:
         if st.button("Cancelar", key="btn_cancel_incat"):
             st.session_state["incat_open"] = False
             st.rerun()
-
-
-# ---- MRC-SS display (right after INCAT/PND) ----
-mrc_keys = [
-    "mrc_ombro_D", "mrc_ombro_E",
-    "mrc_cotovelo_D", "mrc_cotovelo_E",
-    "mrc_punho_D", "mrc_punho_E",
-    "mrc_quadril_D", "mrc_quadril_E",
-    "mrc_joelho_D", "mrc_joelho_E",
-    "mrc_tornozelo_D", "mrc_tornozelo_E",
-]
-
-if "mrc_ss_total" not in st.session_state:
-    st.session_state["mrc_ss_total"] = ""  # stays blank until user calculates
-
-inline_label_display(
-    "Escala MRC-SS<br><span style='font-size:0.85em; color:#666'>(Calculada automaticamente, conforme exame físico)</span>",
-    str(st.session_state["mrc_ss_total"]) if st.session_state["mrc_ss_total"] != "" else "Calculada automaticamente, conforme exame físico",
-)
 
 
 # -----------------------------
