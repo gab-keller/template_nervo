@@ -228,7 +228,10 @@ meds_atual_previo = text_area_lines(
     label="",
     lines=5,
     key="meds_atual_previo_texto",
-    placeholder="",
+    placeholder=(
+        "Medicamento, data de início, data de término e motivo da suspensão.\n"
+        "Ex.: Rituximabe 1g D1/D15, início 01/2024, suspensão 07/2024 por infecção"
+    ),
 )
 
 st.markdown("**Outros medicamentos**")
