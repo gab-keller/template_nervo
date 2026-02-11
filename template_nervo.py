@@ -44,10 +44,6 @@ def inline_label_input(label_text: str, key: str, placeholder: str = ""):
         return st.text_input("", key=key, placeholder=placeholder, label_visibility="collapsed")
 
 def inline_label_display(label_text: str, value: str):
-    """
-    Label + disabled display box in the same row.
-    No key on the text_input so it always reflects the provided value.
-    """
     c_label, c_box, _fill = st.columns([3.2, 3.0, 10.0], vertical_alignment="center")
     with c_label:
         st.markdown(f'<div class="inline-label">{label_text}</div>', unsafe_allow_html=True)
@@ -55,31 +51,27 @@ def inline_label_display(label_text: str, value: str):
         st.text_input("", value=value, disabled=True, label_visibility="collapsed")
 
 
-def compute_mrc_ss(mrc_keys: list[str]) -> tuple[str, int | None]:
+def compute_mrc_ss(mrc_keys: list[str]) -> tuple[bool, int | None]:
     """
-    Returns (display_string, numeric_total_or_None)
-    - display_string: "" if incomplete, else str(total)
+    Returns (is_complete_and_valid, total_or_None)
+    Valid only if ALL fields are filled with integers 0–5.
     """
     values = []
     for k in mrc_keys:
         v = st.session_state.get(k, "")
         if v is None or str(v).strip() == "":
-            return ("", None)  # incomplete => blank
+            return (False, None)
         try:
             iv = int(str(v).strip())
         except ValueError:
-            return ("", None)
+            return (False, None)
         if iv < 0 or iv > 5:
-            return ("", None)
+            return (False, None)
         values.append(iv)
-    total = sum(values)
-    return (str(total), total)
+    return (True, sum(values))
 
 
 def small_mrc_box(key: str):
-    """
-    Small numeric textbox (0–5) that can be left blank initially.
-    """
     return st.text_input(
         "",
         key=key,
@@ -304,9 +296,10 @@ mrc_keys = [
     "mrc_tornozelo_D", "mrc_tornozelo_E",
 ]
 
-mrc_display, mrc_total = compute_mrc_ss(mrc_keys)
+if "mrc_ss_total" not in st.session_state:
+    st.session_state["mrc_ss_total"] = ""   # stays blank until user calculates
 
-inline_label_display("Escala MRC-SS", mrc_display)
+inline_label_display("Escala MRC-SS", str(st.session_state["mrc_ss_total"]) if st.session_state["mrc_ss_total"] != "" else "")
 
 st.markdown("**Outras escalas e métricas de seguimento**")
 _ = text_area_lines(
@@ -315,6 +308,7 @@ _ = text_area_lines(
     key="outras_escalas_seguimento",
     placeholder="NIS, dinamometria, tempo de marcha, TUG",
 )
+
 
 # -----------------------------
 # 6) Exame físico neurológico
@@ -328,7 +322,7 @@ _ = text_area_lines(
     placeholder="Força, tônus, reflexo, equilíbrio, sensibilidade, nervos cranianos, alterações autonômicas, cognição",
 )
 
-st.markdown("### MRC")
+st.markdown("**MRC:**")  # smaller, same style as "Controle atual:"
 
 # Header row
 h0, h1, h2, _hf = st.columns([3.2, 1.4, 1.4, 10.0], vertical_alignment="center")
@@ -355,15 +349,21 @@ mrc_row("Flexão do quadril:", "mrc_quadril_D", "mrc_quadril_E")
 mrc_row("Extensão do joelho:", "mrc_joelho_D", "mrc_joelho_E")
 mrc_row("Dorsiflexão do tornozelo:", "mrc_tornozelo_D", "mrc_tornozelo_E")
 
-# Live computed MRC-SS info line (optional; the official display is up in Evolução clínica)
-mrc_display_live, _ = compute_mrc_ss(mrc_keys)
-if mrc_display_live != "":
-    st.caption(f"MRC-SS calculado: {mrc_display_live} (soma dos 12 valores)")
+# Button appears only when all fields are complete + valid
+complete, total = compute_mrc_ss(mrc_keys)
 
-st.markdown("### Deformidades osteoesqueléticas e exame clínico geral")
-_ = text_area_lines(
-    label="",
-    lines=3,
-    key="deformidades_osteo_texto",
-    placeholder="Retrações tendíneas, pé cavo, escoliose, etc.",
-)
+bcalc1, bcalc2, _fill = st.columns([2.2, 2.2, 10.0], vertical_alignment="center")
+with bcalc1:
+    if complete:
+        if st.button("Calcular MRC-SS", key="btn_calc_mrcss", type="primary"):
+            st.session_state["mrc_ss_total"] = total  # writes the value used by the display box above
+            st.success(f"MRC-SS calculado: {total}")
+            st.rerun()
+    else:
+        st.caption("Preencha todos os 12 campos (0–5) para habilitar o cálculo do MRC-SS.")
+
+with bcalc2:
+    if st.button("Limpar MRC-SS", key="btn_clear_mrcss"):
+        st.session_state["mrc_ss_total"] = ""
+        st.rerun()
+
