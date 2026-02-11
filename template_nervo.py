@@ -370,3 +370,130 @@ with bcalc2:
         st.session_state["mrc_ss_total"] = ""
         st.rerun()
 
+# =============================
+# ADD THESE SECTIONS AFTER YOUR "EXAME FÍSICO NEUROLÓGICO" SECTION
+# (you can paste them at the end of the file, below the deformidades box)
+# =============================
+
+# -----------------------------
+# 4) Exames complementares
+# -----------------------------
+st.subheader("Exames complementares")
+
+st.markdown("**ENMG**")
+_ = text_area_lines(
+    label="",
+    lines=3,
+    key="exames_enmg",
+    placeholder="Data e conclusão da ENMG",
+)
+
+st.markdown("**Líquor**")
+_ = text_area_lines(
+    label="",
+    lines=3,
+    key="exames_liquor",
+    placeholder="Data e achados do líquor",
+)
+
+st.markdown("**USG nervos**")
+_ = text_area_lines(
+    label="",
+    lines=3,
+    key="exames_usg_nervos",
+    placeholder="Data e achados do USG",
+)
+
+st.markdown("**Biópsia**")
+_ = text_area_lines(
+    label="",
+    lines=3,
+    key="exames_biopsia",
+    placeholder="Data e achados da  biópsia de nervo, glândulas salivares, panículo adiposo, etc.",
+)
+
+st.markdown("**Demais exames**")
+_ = text_area_lines(
+    label="",
+    lines=3,
+    key="exames_demais",
+    placeholder="Data e descrição dos demais exames relevantes (laboratoriais, RM, teste genético)",
+)
+
+# -----------------------------
+# 5) Impressão e discussão
+# -----------------------------
+st.subheader("Impressão e discussão:")
+_ = text_area_lines(
+    label="",
+    lines=4,
+    key="impressao_discussao",
+    placeholder="Impressão diagnóstica. Avaliação sobre o estado atual de controle ou se há progressão da doença",
+)
+
+# -----------------------------
+# 6) Diagnóstico/Hipótese diagnóstica
+# -----------------------------
+st.subheader("Diagnóstico/Hipótese diagnóstica:")
+
+if "dx_categoria" not in st.session_state:
+    st.session_state["dx_categoria"] = "Diagnóstico indefinido"
+
+dx_options = [
+    "Neuropatia genética",
+    "Neuropatia imunomediada",
+    "Outras neuropatias adquiridas (nutricional, endocrinológica, infecciosa, tóxica, etc.)",
+    "Outros diagnósticos (neurônio motor, junção e músculo)",
+    "Diagnóstico indefinido",
+]
+
+dx_categoria = st.radio(
+    "Selecione UMA opção",
+    options=dx_options,
+    index=dx_options.index(st.session_state["dx_categoria"]) if st.session_state["dx_categoria"] in dx_options else 4,
+    key="radio_dx_categoria",
+)
+
+# Submenus (appear conditionally)
+dx_genetica_choices = []
+dx_imuno_choices = []
+
+if dx_categoria == "Neuropatia genética":
+    with st.expander("Detalhar (Neuropatia genética)", expanded=True):
+        dx_genetica_choices = st.multiselect(
+            "Genes / causas (pode selecionar múltiplos)",
+            options=["PMP22", "MPZ", "GJB1", "MFN2", "outro"],
+            default=st.session_state.get("dx_genetica_choices", []),
+            key="dx_genetica_choices",
+        )
+
+if dx_categoria == "Neuropatia imunomediada":
+    with st.expander("Detalhar (Neuropatia imunomediada)", expanded=True):
+        dx_imuno_choices = st.multiselect(
+            "Subtipos (pode selecionar múltiplos)",
+            options=["CIDP", "vasculite", "ganglionopatia", "neuropatia motora multifocal", "outros"],
+            default=st.session_state.get("dx_imuno_choices", []),
+            key="dx_imuno_choices",
+        )
+
+# Optional: a small auto-summary field (comment out if you don't want it)
+dx_summary_parts = [dx_categoria]
+if dx_categoria == "Neuropatia genética" and st.session_state.get("dx_genetica_choices"):
+    dx_summary_parts.append("Genes: " + ", ".join(st.session_state["dx_genetica_choices"]))
+if dx_categoria == "Neuropatia imunomediada" and st.session_state.get("dx_imuno_choices"):
+    dx_summary_parts.append("Subtipos: " + ", ".join(st.session_state["dx_imuno_choices"]))
+
+st.caption(" | ".join(dx_summary_parts))
+
+# -----------------------------
+# 7) Conduta
+# -----------------------------
+st.subheader("Conduta:")
+_ = text_area_lines(
+    label="",
+    lines=4,
+    key="conduta",
+    placeholder="Conduta diagnóstica e terapêutica",
+)
+
+
