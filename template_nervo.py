@@ -207,6 +207,7 @@ if st.session_state["incat_open"]:
     }
 
     st.radio(
+        "Selecione UMA opção (MMSS)",
         options=list(ul_options.keys()),
         format_func=lambda k: ul_options[k],
         index=list(ul_options.keys()).index(st.session_state["incat_ul"]),
@@ -226,6 +227,7 @@ if st.session_state["incat_open"]:
     }
 
     st.radio(
+        "Selecione UMA opção (MMII)",
         options=list(ll_options.keys()),
         format_func=lambda k: ll_options[k],
         index=list(ll_options.keys()).index(st.session_state["incat_ll"]),
