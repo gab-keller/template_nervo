@@ -169,7 +169,7 @@ _ = text_area_lines(
     label="",
     lines=1,
     key="Id",
-    placeholder="",
+    placeholder="",)
     
 _ = inline_label_input("**Idade de início**", key="idade_inicio", placeholder="Ex.: 12 anos / 2021 / infância")
 
