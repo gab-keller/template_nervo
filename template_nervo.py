@@ -27,6 +27,23 @@ st.markdown(
     """,
     unsafe_allow_html=True,
 )
+st.markdown(
+    """
+    <style>
+      /* Make all subheader titles (st.subheader) red */
+      h3 {
+        color: #c00000 !important;  /* medical-style red */
+      }
+
+      /* Optional: slightly darker red on hover/selection consistency */
+      h3 strong {
+        color: #c00000 !important;
+      }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
 
 st.title("TEMPLATE NERVO PERIFÉRICO - CONSULTA INICIAL E RETORNO")
 
@@ -510,4 +527,13 @@ if dx_categoria == "Neuropatia imunomediada":
 
 st.caption(summary)
 
-
+# -----------------------------
+# 7) Conduta
+# -----------------------------
+st.subheader("Conduta:")
+_ = text_area_lines(
+    label="",
+    lines=4,
+    key="conduta",
+    placeholder="Conduta diagnóstica e terapêutica",
+)
