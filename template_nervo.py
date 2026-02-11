@@ -3,17 +3,16 @@ import streamlit as st
 
 st.markdown(
     """
-    <div style='line-height:1.1'>
-        <div style='font-size:32px; font-weight:700;'>
-            TEMPLATE NERVO PERIFÉRICO
-        </div>
-        <div style='font-size:16px; color:#666;'>
-            CONSULTA INICIAL E RETORNO
-        </div>
-    </div>
+    <h1 style='margin-bottom:0;'>
+        TEMPLATE NERVO PERIFÉRICO
+    </h1>
+    <h4 style='margin-top:0; color:#555; font-weight:normal;'>
+        CONSULTA INICIAL E RETORNO
+    </h4>
     """,
     unsafe_allow_html=True,
 )
+
 
 
 # --- CSS: small controlled gutter + prevent label overflow into input ---
