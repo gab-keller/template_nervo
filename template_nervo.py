@@ -315,9 +315,12 @@ mrc_keys = [
 
 # -----------------------------
 # ALIGNED DISPLAY AREA
-# Button LEFT, all outputs RIGHT (stacked) -> perfect alignment + wider box
+# Button LEFT, outputs RIGHT (stacked) -> all aligned
 # -----------------------------
-c_left, c_right, _fill = st.columns([2.2, 7.0, 3.0], vertical_alignment="top")
+
+# (keep your state init above this block)
+
+c_left, c_right = st.columns([2.2, 9.8], vertical_alignment="top")
 
 with c_left:
     if st.button("Escala INCAT e PND", key="btn_open_incat"):
@@ -336,18 +339,18 @@ with c_right:
         disabled=True,
     )
 
-# MRC-SS (below PND, aligned + wide)
-mrc_display_value = (
-    str(st.session_state["mrc_ss_total"])
-    if str(st.session_state["mrc_ss_total"]).strip() != ""
-    else "Calculada automaticamente, conforme exame físico"
-)
+    # ✅ MRC-SS aligned with the boxes above (same column)
+    mrc_display_value = (
+        str(st.session_state.get("mrc_ss_total", "")).strip()
+        if str(st.session_state.get("mrc_ss_total", "")).strip() != ""
+        else "Calculada automaticamente, conforme exame físico"
+    )
 
-st.text_input(
-    "Escala MRC-SS",
-    value=mrc_display_value,
-    disabled=True,
-)
+    st.text_input(
+        "Escala MRC-SS",
+        value=mrc_display_value,
+        disabled=True,
+    )
 
 
 with _fill:
