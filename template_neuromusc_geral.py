@@ -1286,18 +1286,6 @@ if export_text:
 
 st.divider()
 
-if st.button("Limpar rascunho salvo neste navegador"):
-    clear_local_draft()
-
-c1, c2 = st.columns(2)
-with c1:
-    if st.button("Restaurar rascunho salvo neste navegador"):
-        st.session_state["_autosave_restore_done"] = False
-        restore_from_localstorage()
-with c2:
-    if st.button("Limpar rascunho salvo neste navegador"):
-        clear_local_draft()
-
 st.markdown("### Rascunho automático (navegador atual)")
 
 col1, col2 = st.columns(2)
