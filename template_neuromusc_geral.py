@@ -92,10 +92,10 @@ def text_area_lines(label: str, lines: int, key: str, placeholder: str = ""):
     height_px = max(80, int(lines * 24 + 20))
     return st.text_area(label, key=key, height=height_px, placeholder=placeholder)
 
-def inline_label_input(label_text: str, key: str, placeholder: str = ""):
+def inline_label_input(label_html: str, key: str, placeholder: str = ""):
     c_label, c_input, _fill = st.columns([3.2, 4.2, 10.0], vertical_alignment="center")
     with c_label:
-        st.markdown(f'<div class="inline-label">{label_text}</div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="inline-label">{label_html}</div>', unsafe_allow_html=True)
     with c_input:
         return st.text_input("", key=key, placeholder=placeholder, label_visibility="collapsed")
 
@@ -171,14 +171,14 @@ _ = text_area_lines(
     key="Id",
     placeholder="",)
     
-_ = inline_label_input("**Idade de início**", key="idade_inicio", placeholder="Ex.: 12 anos / 2021 / infância")
+_ = inline_label_input("<strong>Idade de início</strong>", key="idade_inicio", placeholder="Ex.: 12 anos / 2021 / infância")
 
 st.markdown("**História da doença atual:**")
 _ = text_area_lines(
     label="",
     lines=6,
     key="hda",
-    placeholder="Descreva a história da doença atual",
+    placeholder="",
 )
 
 # =========================================================
