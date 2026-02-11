@@ -1,30 +1,21 @@
-# streamlit_app.py
 import streamlit as st
 
-st.title("Template nervo periférico")
+st.set_page_config(page_title="Template nervo periférico", layout="wide")
 
-
-# --- CSS: small controlled gutter + prevent label overflow into input ---
 st.markdown(
     """
     <style>
-      div[data-testid="stHorizontalBlock"]{ gap: 0.6rem !important; }
-      div[data-testid="column"]{
-        padding-left: 0.1rem !important;
-        padding-right: 0.1rem !important;
-      }
-      .inline-label{
-        margin: 0 !important;
-        padding: 0 !important;
-        line-height: 1.4 !important;
-        white-space: normal !important;
-        overflow: hidden !important;
-        text-overflow: ellipsis !important;
+      section.main > div.block-container{
+        max-width: 100% !important;
+        padding-left: 2rem !important;
+        padding-right: 2rem !important;
       }
     </style>
     """,
     unsafe_allow_html=True,
 )
+
+st.title("Template nervo periférico")
 st.markdown(
     """
     <style>
