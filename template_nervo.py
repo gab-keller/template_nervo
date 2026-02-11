@@ -206,6 +206,7 @@ if st.session_state["incat_open"]:
         st.session_state["incat_ul"] = 0
 
     st.session_state["incat_ul"] = st.radio(
+        "",
         options=list(ul_options.keys()),
         format_func=lambda k: ul_options[k],
         index=list(ul_options.keys()).index(st.session_state["incat_ul"]),
@@ -227,6 +228,7 @@ if st.session_state["incat_open"]:
         st.session_state["incat_ll"] = 0
 
     st.session_state["incat_ll"] = st.radio(
+        "",
         options=list(ll_options.keys()),
         format_func=lambda k: ll_options[k],
         index=list(ll_options.keys()).index(st.session_state["incat_ll"]),
