@@ -39,6 +39,11 @@ st.markdown(
         font-size: 0.95rem;
         color: #333;
         padding-top: 0.35rem;
+
+        /* prevent ugly mid-word breaks */
+        white-space: nowrap;
+        word-break: normal;
+        overflow-wrap: normal;
       }
     </style>
     """,
@@ -124,6 +129,14 @@ def _section(title: str, body: str) -> str:
 
 def _bool_to_txt(v: bool) -> str:
     return "Sim" if v else "Não"
+
+def inline_label_input_dnpm(label_text: str, key: str, placeholder: str = ""):
+    # Wider label column so words don't wrap/break
+    c_label, c_input = st.columns([5.2, 2.8], vertical_alignment="center")
+    with c_label:
+        st.markdown(f'<div class="inline-label">{label_text}</div>', unsafe_allow_html=True)
+    with c_input:
+        return st.text_input("", key=key, placeholder=placeholder, label_visibility="collapsed")
 
 # =========================
 # SESSION STATE INIT
@@ -217,18 +230,20 @@ if dnpm == "Atraso desenvolvimento":
     st.markdown("**Idade de obtenção dos marcos motores e cognitivos:**")
 
     # Two-column grid for compactness
-    r1c1, r1c2, _f = st.columns([6, 6, 10], vertical_alignment="center")
-    with r1c1:
-        _ = inline_label_input("Sustento cefálico", key="dnpm_sustento_cefalico", placeholder="Ex.: 4 meses")
-        _ = inline_label_input("Engatinhar", key="dnpm_engatinhar", placeholder="Ex.: 10 meses")
-        _ = inline_label_input("Andar sem apoio", key="dnpm_andar_sem_apoio", placeholder="Ex.: 18 meses")
-        _ = inline_label_input("Formar frases", key="dnpm_formar_frases", placeholder="Ex.: 3 anos")
-        _ = inline_label_input("Sentar", key="dnpm_sentar_meses", placeholder="Ex.: 8")
-    with r1c2:
-        _ = inline_label_input("Ficar de pé", key="dnpm_ficar_de_pe_anos", placeholder="Ex.: 2")
-        _ = inline_label_input("Andar com apoio", key="dnpm_andar_com_apoio_anos", placeholder="Ex.: 2")
-        _ = inline_label_input("Primeiras palavras", key="dnpm_primeiras_palavras_anos", placeholder="Ex.: 2")
-        _ = inline_label_input("Controle esfincteriano", key="dnpm_controle_esfincteriano_meses", placeholder="Ex.: 30")
+    colA, colB = st.columns(2, vertical_alignment="top")
+
+    with colA:
+        inline_label_input_dnpm("Sustento cefálico", key="dnpm_sustento_cefalico", placeholder="Ex.: 4 meses")
+        inline_label_input_dnpm("Engatinhar", key="dnpm_engatinhar", placeholder="Ex.: 10 meses")
+        inline_label_input_dnpm("Andar sem apoio", key="dnpm_andar_sem_apoio", placeholder="Ex.: 18 meses")
+        inline_label_input_dnpm("Formar frases", key="dnpm_formar_frases", placeholder="Ex.: 3 anos")
+        inline_label_input_dnpm("Sentar (meses)", key="dnpm_sentar_meses", placeholder="Ex.: 8")
+
+    with colB:
+        inline_label_input_dnpm("Ficar de pé (anos)", key="dnpm_ficar_de_pe_anos", placeholder="Ex.: 2")
+        inline_label_input_dnpm("Andar com apoio (anos)", key="dnpm_andar_com_apoio_anos", placeholder="Ex.: 2")
+        inline_label_input_dnpm("Primeiras palavras (anos)", key="dnpm_primeiras_palavras_anos", placeholder="Ex.: 2")
+        inline_label_input_dnpm("Controle esfincteriano (meses)", key="dnpm_controle_esfincteriano_meses", placeholder="Ex.: 30")
 
 # =========================================================
 # 4) NEUROLÓGICO GERAL + EXAME DE FORÇA (panel)
@@ -470,7 +485,12 @@ with cR:
     disp = st.session_state.get("func_resumo", "").strip()
     if not disp:
         disp = "Gerado automaticamente ao preencher limitações motoras"
-    st.text_input("Limitações motoras (resumo)", value=disp, disabled=True)
+    st.text_area(
+    "Limitações motoras (resumo)",
+    value=disp,
+    height=120,   # ~4–5 lines
+    disabled=True,
+)
 
 def build_func_summary() -> str:
     parts = []
@@ -551,7 +571,7 @@ def build_func_summary() -> str:
             vent_txt += (" — " if vent_txt else "") + vent_info
         parts.append("Ventilação: " + vent_txt)
 
-    return " \n".join([p for p in parts if p.strip()]).strip()
+    return "\n".join([p for p in parts if p.strip()]).strip()
 
 
 if st.session_state["func_open"]:
