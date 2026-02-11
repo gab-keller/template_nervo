@@ -44,70 +44,92 @@ def inline_label_input(label_text: str, key: str, placeholder: str = ""):
         return st.text_input("", key=key, placeholder=placeholder, label_visibility="collapsed")
 
 
-def incat_dialog():
-    # Initialize defaults
-    if "incat_ul" not in st.session_state:
-        st.session_state["incat_ul"] = None
-    if "incat_ll" not in st.session_state:
-        st.session_state["incat_ll"] = None
+# -----------------------------
+# INCAT selector (NO st.dialog) - works on older Streamlit
+# -----------------------------
 
-    with st.dialog("Escala INCAT"):
-        st.markdown("### Membros Superiores")
+# state init
+if "incat_open" not in st.session_state:
+    st.session_state["incat_open"] = False
+if "incat_ul" not in st.session_state:
+    st.session_state["incat_ul"] = 0
+if "incat_ll" not in st.session_state:
+    st.session_state["incat_ll"] = 0
+if "incat_total" not in st.session_state:
+    st.session_state["incat_total"] = ""
 
-        ul_options = {
-            0: "0 – Sem problemas nos membros superiores.",
-            1: "1 – Sintomas em um ou ambos os braços, sem afetar a capacidade de realizar nenhuma das seguintes funções:\n"
-               "• fechar todos os zíperes e botões\n"
-               "• lavar ou pentear o cabelo\n"
-               "• usar faca e garfo juntos\n"
-               "• manusear moedas pequenas",
-            2: "2 – Sintomas em um ou ambos os braços, afetando, mas não impedindo, nenhuma das funções acima.",
-            3: "3 – Sintomas em um ou ambos os braços, impedindo uma ou duas das funções listadas acima.",
-            4: "4 – Sintomas em um ou ambos os braços, impedindo três ou todas as funções listadas acima, mas ainda com alguns movimentos propositais possíveis.",
-            5: "5 – Incapacidade de usar qualquer braço para qualquer movimento com finalidade.",
-        }
+c_incat_btn, c_incat_box, _f = st.columns([1.6, 3.0, 10.0], vertical_alignment="center")
 
-        st.session_state["incat_ul"] = st.radio(
-            "Selecione UMA opção (MMSS)",
-            options=list(ul_options.keys()),
-            format_func=lambda k: ul_options[k],
-            index=(list(ul_options.keys()).index(st.session_state["incat_ul"])
-                   if st.session_state["incat_ul"] in ul_options else 0),
-            key="incat_ul_radio",
-        )
+with c_incat_btn:
+    if st.button("Selecionar Escala INCAT"):
+        st.session_state["incat_open"] = True
 
-        st.markdown("---")
-        st.markdown("### Marcha (Membros Inferiores)")
+with c_incat_box:
+    st.text_input(
+        "Escala INCAT (UL + LL)",
+        value=str(st.session_state["incat_total"]) if st.session_state["incat_total"] != "" else "",
+        key="incat_total_display",
+        disabled=True,
+    )
 
-        ll_options = {
-            0: "0 – Marcha não afetada.",
-            1: "1 – Marcha afetada, mas caminha independentemente em ambientes externos.",
-            2: "2 – Geralmente necessita apoio unilateral (bengala, muleta simples ou apoio de um braço) para caminhar em ambientes externos.",
-            3: "3 – Geralmente necessita apoio bilateral (duas bengalas, muletas, andador ou apoio de dois braços) para caminhar em ambientes externos.",
-            4: "4 – Geralmente usa cadeira de rodas para se locomover em ambientes externos, mas consegue ficar em pé e andar alguns passos com ajuda.",
-            5: "5 – Restrito à cadeira de rodas, incapaz de ficar em pé ou andar, ou apenas alguns passos mesmo com ajuda.",
-        }
+# "Popup" (conditional panel)
+if st.session_state["incat_open"]:
+    st.markdown("#### Escala INCAT")
 
-        st.session_state["incat_ll"] = st.radio(
-            "Selecione UMA opção (MMII)",
-            options=list(ll_options.keys()),
-            format_func=lambda k: ll_options[k],
-            index=(list(ll_options.keys()).index(st.session_state["incat_ll"])
-                   if st.session_state["incat_ll"] in ll_options else 0),
-            key="incat_ll_radio",
-        )
+    st.markdown("**Membros Superiores**")
+    ul_options = {
+        0: "0 – Sem problemas nos membros superiores.",
+        1: "1 – Sintomas em um ou ambos os braços, sem afetar a capacidade de realizar nenhuma das seguintes funções:\n"
+           "• fechar todos os zíperes e botões\n"
+           "• lavar ou pentear o cabelo\n"
+           "• usar faca e garfo juntos\n"
+           "• manusear moedas pequenas",
+        2: "2 – Sintomas em um ou ambos os braços, afetando, mas não impedindo, nenhuma das funções acima.",
+        3: "3 – Sintomas em um ou ambos os braços, impedindo uma ou duas das funções listadas acima.",
+        4: "4 – Sintomas em um ou ambos os braços, impedindo três ou todas as funções listadas acima, mas ainda com alguns movimentos propositais possíveis.",
+        5: "5 – Incapacidade de usar qualquer braço para qualquer movimento com finalidade.",
+    }
 
-        total = int(st.session_state["incat_ul"]) + int(st.session_state["incat_ll"])
-        st.markdown(f"**Total (UL + LL): {total}**")
+    st.session_state["incat_ul"] = st.radio(
+        "Selecione UMA opção (MMSS)",
+        options=list(ul_options.keys()),
+        format_func=lambda k: ul_options[k],
+        index=list(ul_options.keys()).index(st.session_state["incat_ul"]),
+        key="incat_ul_radio",
+    )
 
-        c1, c2 = st.columns([1, 1])
-        with c1:
-            if st.button("Salvar", type="primary"):
-                st.session_state["incat_total"] = total
-                st.rerun()
-        with c2:
-            if st.button("Cancelar"):
-                st.rerun()
+    st.markdown("---")
+    st.markdown("**Marcha (Membros Inferiores)**")
+    ll_options = {
+        0: "0 – Marcha não afetada.",
+        1: "1 – Marcha afetada, mas caminha independentemente em ambientes externos.",
+        2: "2 – Geralmente necessita apoio unilateral (bengala, muleta simples ou apoio de um braço) para caminhar em ambientes externos.",
+        3: "3 – Geralmente necessita apoio bilateral (duas bengalas, muletas, andador ou apoio de dois braços) para caminhar em ambientes externos.",
+        4: "4 – Geralmente usa cadeira de rodas para se locomover em ambientes externos, mas consegue ficar em pé e andar alguns passos com ajuda.",
+        5: "5 – Restrito à cadeira de rodas, incapaz de ficar em pé ou andar, ou apenas alguns passos mesmo com ajuda.",
+    }
+
+    st.session_state["incat_ll"] = st.radio(
+        "Selecione UMA opção (MMII)",
+        options=list(ll_options.keys()),
+        format_func=lambda k: ll_options[k],
+        index=list(ll_options.keys()).index(st.session_state["incat_ll"]),
+        key="incat_ll_radio",
+    )
+
+    total = int(st.session_state["incat_ul"]) + int(st.session_state["incat_ll"])
+    st.markdown(f"**Total (UL + LL): {total}**")
+
+    b1, b2, _bfill = st.columns([1, 1, 10.0])
+    with b1:
+        if st.button("Salvar INCAT", type="primary"):
+            st.session_state["incat_total"] = total
+            st.session_state["incat_open"] = False
+            st.rerun()
+    with b2:
+        if st.button("Cancelar"):
+            st.session_state["incat_open"] = False
+            st.rerun()
 
 
 # -----------------------------
