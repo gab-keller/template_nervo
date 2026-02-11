@@ -253,7 +253,7 @@ _ = text_area_lines(
 # =========================================================
 # 8) AVALIAÇÃO FUNCIONAL (panel summary)
 # =========================================================
-st.subheader("Avaliação funcional")
+st.markdown("Avaliação funcional")
 
 cL, cR = st.columns([2.2, 9.8], vertical_alignment="top")
 with cL:
@@ -423,7 +423,7 @@ if st.session_state["func_open"]:
 # =========================================================
 # 9) SEGUIMENTO MULTIDISCIPLINAR
 # =========================================================
-st.subheader("Seguimento multidisciplinar")
+st.markdown("Seguimento multidisciplinar")
 
 def freq_row(label: str, check_key: str, freq_key: str):
     c0, c1, c2, _f = st.columns([3.2, 1.6, 2.2, 10.0], vertical_alignment="center")
@@ -453,6 +453,8 @@ _ = text_area_lines("", 3, "outras_terapias", placeholder="")
 # =========================================================
 # 4) NEUROLÓGICO GERAL + EXAME DE FORÇA (panel)
 # =========================================================
+st.subheader("Exame físico")
+
 st.markdown("**Neurológico geral**")
 
 _ = text_area_lines(
