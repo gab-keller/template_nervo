@@ -321,9 +321,6 @@ if "export_mode" not in st.session_state:
 if "export_text" not in st.session_state:
     st.session_state["export_text"] = ""
 
-# --- AUTOSAVE BLOCK ---
-restore_from_localstorage()
-
 
 # =========================================================
 # 1) ANAMNESE
