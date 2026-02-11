@@ -47,31 +47,45 @@ st.markdown(
 st.markdown(
     """
     <style>
-      /* ===== GLOBAL VERTICAL SPACING CONTROL ===== */
+      /* ==========================
+         GLOBAL VERTICAL SPACING TIGHTENER
+         ========================== */
 
-      /* Reduce space ABOVE text areas */
-      div[data-testid="stTextArea"] {
-        margin-top: -0.6rem !important;
+      /* 1) Reduce the default bottom margin/padding of Markdown blocks */
+      div[data-testid="stMarkdown"] p,
+      div[data-testid="stMarkdown"] h1,
+      div[data-testid="stMarkdown"] h2,
+      div[data-testid="stMarkdown"] h3,
+      div[data-testid="stMarkdown"] h4,
+      div[data-testid="stMarkdown"] h5,
+      div[data-testid="stMarkdown"] h6 {
+        margin-bottom: 0.15rem !important;
+        margin-top: 0.15rem !important;
       }
 
-      /* Reduce space ABOVE radio groups */
-      div[data-testid="stRadio"] {
-        margin-top: -0.4rem !important;
+      /* 2) Tighten spacing between Streamlit element containers (THIS is the big one) */
+      div[data-testid="stVerticalBlock"] > div[data-testid="stElementContainer"] {
+        margin-bottom: 0.35rem !important;
       }
 
-      /* Reduce space ABOVE checkbox groups */
-      div[data-testid="stCheckbox"] {
-        margin-top: -0.4rem !important;
+      /* 3) Specifically reduce the top margin of widget blocks */
+      div[data-testid="stTextArea"],
+      div[data-testid="stRadio"],
+      div[data-testid="stCheckbox"],
+      div[data-testid="stTextInput"],
+      div[data-testid="stSelectbox"] {
+        margin-top: -0.35rem !important;
       }
 
-      /* Reduce space AFTER markdown subtitles */
-      div[data-testid="stMarkdown"] {
-        margin-bottom: 0.2rem !important;
+      /* 4) Textarea label spacing (sometimes Streamlit inserts a label wrapper even if label="") */
+      label, .stTextArea label, .stRadio label, .stCheckbox label {
+        margin-bottom: 0.15rem !important;
       }
     </style>
     """,
     unsafe_allow_html=True,
 )
+
 
 
 
