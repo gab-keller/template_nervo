@@ -226,19 +226,17 @@ def _json_dumps_safe(obj) -> str:
     return json.dumps(obj, ensure_ascii=False, default=str)
 
 def restore_from_localstorage():
-    """
-    Must be called BEFORE widgets are created.
-    Uses a 2-pass pattern because JS value arrives on the next rerun.
-    """
     if "_autosave_restore_done" not in st.session_state:
         st.session_state["_autosave_restore_done"] = False
 
+    # Unique suffix: changes when user clicks restore
+    suffix = str(st.session_state.get("_autosave_restore_request", "init"))
+
     raw = streamlit_js_eval(
         js_expressions=f"localStorage.getItem('{AUTOSAVE_STORAGE_KEY}')",
-        key="__autosave_get",
+        key=f"__autosave_get_{suffix}",
     )
 
-    # Second pass: apply once when value becomes available
     if not st.session_state["_autosave_restore_done"]:
         if raw:
             try:
@@ -246,28 +244,25 @@ def restore_from_localstorage():
                 ts = float(blob.get("_ts", 0))
                 payload = blob.get("payload", {})
 
-                # Expired -> delete
                 if time.time() - ts > AUTOSAVE_TTL_SECONDS:
                     streamlit_js_eval(
                         js_expressions=f"localStorage.removeItem('{AUTOSAVE_STORAGE_KEY}')",
-                        key="__autosave_rm_expired",
+                        key=f"__autosave_rm_expired_{suffix}",
                     )
                 else:
-                    # Only set keys that are not already set
                     for k, v in payload.items():
-                        if k in FORM_KEYS and k not in st.session_state:
+                        if k in FORM_KEYS:
                             st.session_state[k] = v
 
                     st.session_state["_autosave_restore_done"] = True
                     st.rerun()
                     return
             except Exception:
-                # Corrupted JSON -> remove
                 streamlit_js_eval(
                     js_expressions=f"localStorage.removeItem('{AUTOSAVE_STORAGE_KEY}')",
-                    key="__autosave_rm_bad",
+                    key=f"__autosave_rm_bad_{suffix}",
                 )
-        # Mark done if nothing to restore
+
         st.session_state["_autosave_restore_done"] = True
 
 def save_to_localstorage():
@@ -298,6 +293,12 @@ def clear_local_draft():
         if k in st.session_state:
             del st.session_state[k]
     st.rerun()
+
+def request_restore():
+    st.session_state["_autosave_restore_done"] = False
+    st.session_state["_autosave_restore_request"] = time.time()
+    st.rerun()
+
 
 # =========================
 # SESSION STATE INIT
@@ -1296,8 +1297,7 @@ with c1:
         key="btn_restore_draft",
         help="Restaura o último rascunho salvo neste navegador (até 1 hora)."
     ):
-        st.session_state["_autosave_restore_done"] = False
-        restore_from_localstorage()
+        request_restore()
 
 with c2:
     if st.button(
