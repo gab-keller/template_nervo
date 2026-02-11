@@ -280,9 +280,9 @@ if st.session_state["incat_open"]:
     b1, b2, _bfill = st.columns([1, 1, 10.0])
     with b1:
         if st.button("Salvar INCAT", key="btn_save_incat", type="primary"):
-        st.session_state["incat_total"] = f"MMSS ({ul}) + MMII ({ll}) = {total}"
-        st.session_state["incat_open"] = False
-        st.rerun()
+            st.session_state["incat_total"] = f"MMSS ({ul}) + MMII ({ll}) = {total}"
+            st.session_state["incat_open"] = False
+            st.rerun()
 
     with b2:
         if st.button("Cancelar", key="btn_cancel_incat"):
