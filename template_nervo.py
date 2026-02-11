@@ -774,7 +774,7 @@ def build_export_text(include_all: bool) -> str:
 
 # --- UI: choose export mode (switchable) ---
 st.divider()
-st.subheader("Exportação (copiar e colar no Notepad)")
+st.subheader("Exportar texto acima")
 
 # >>> ADD THIS LINE <<<
 st.markdown(
