@@ -272,15 +272,18 @@ if st.session_state["incat_open"]:
     )
 
     # Compute total live
-    total = int(st.session_state["incat_ul"]) + int(st.session_state["incat_ll"])
-    st.markdown(f"**Total (UL + LL): {total}**")
+    ul = int(st.session_state["incat_ul"])
+    ll = int(st.session_state["incat_ll"])
+    total = ul + ll
+    st.markdown(f"**MMSS ({ul}) + MMII ({ll}) = {total}**")
 
     b1, b2, _bfill = st.columns([1, 1, 10.0])
     with b1:
         if st.button("Salvar INCAT", key="btn_save_incat", type="primary"):
-            st.session_state["incat_total"] = total
-            st.session_state["incat_open"] = False
-            st.rerun()
+        st.session_state["incat_total"] = f"MMSS ({ul}) + MMII ({ll}) = {total}"
+        st.session_state["incat_open"] = False
+        st.rerun()
+
     with b2:
         if st.button("Cancelar", key="btn_cancel_incat"):
             st.session_state["incat_open"] = False
