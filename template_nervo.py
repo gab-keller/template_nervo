@@ -155,14 +155,15 @@ if esporadico and familiar:
 st.subheader("Medicações modificadoras de doença/Imunossupressores")
 st.markdown("**Tratamento atual:**")
 
+st.markdown("**Tratamento atual:**")
+
 tratamento_atual = st.radio(
     "",
     options=[
         "em uso de tratamento medicamentoso",
         "sem tratamento medicamentoso",
-        "não informado",
     ],
-    index=2,
+    index=None,  # no default selection
     key="tratamento_atual_radio",
 )
 
@@ -179,7 +180,6 @@ elif tratamento_atual == "sem tratamento medicamentoso":
         key="trat_sem_tempo",
         placeholder="Ex.: 3 meses / desde 2021",
     )
-
 
 st.markdown("**Medicamentos de uso atual ou prévio, com data de início, data de término e motivo da suspensão**")
 meds_atual_previo = text_area_lines(
@@ -211,9 +211,8 @@ controle_atual = st.radio(
     options=[
         "estável ou melhorando",
         "piorando",
-        "não informado",
     ],
-    index=2,
+    index=None,  # nothing selected initially
     key="controle_atual_radio",
 )
 
