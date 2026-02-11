@@ -190,6 +190,16 @@ _ = text_area_lines(
     ),
 )
 
+st.markdown("**História familiar:**")
+_ = text_area_lines(
+    label="",
+    lines=4,
+    key="antecedentes_pessoais",
+    placeholder=(
+        "Familiares acometidos / estado de saúde de pais, irmãos e filhos / cidade de origem dos pais / consanguinidade / etc."
+    ),
+)
+
 st.markdown("**Medicações em uso:**")
 _ = text_area_lines(
     label="",
@@ -247,7 +257,7 @@ _ = text_area_lines(
     label="",
     lines=5,
     key="evolucao",
-    placeholder="Descreva a evolução clínica (progressão, flutuação, gatilhos, internações, etc.)",
+    placeholder="",
 )
 
 # =========================================================
