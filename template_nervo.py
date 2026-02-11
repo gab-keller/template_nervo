@@ -421,17 +421,19 @@ mrc_keys = [
 ]
 
 if "mrc_ss_total" not in st.session_state:
-    st.session_state["mrc_ss_total"] = ""  # stays blank until user calculates
+    st.session_state["mrc_ss_total"] = ""  # blank until calculated
+
+
+# Define what should appear inside the box
+if st.session_state["mrc_ss_total"] != "":
+    mrc_display_value = str(st.session_state["mrc_ss_total"])
+else:
+    mrc_display_value = "Calculada automaticamente, conforme exame físico"
 
 
 inline_label_display(
-    "Escala MRC-SS<br>"
-    "<span style='font-size:0.85em; color:#666'>"
-    "(calculada automaticamente, conforme exame físico)"
-    "</span>",
-    str(st.session_state["mrc_ss_total"])
-    if st.session_state["mrc_ss_total"] != ""
-    else ""
+    "Escala MRC-SS",
+    mrc_display_value,
 )
 
 
@@ -443,6 +445,7 @@ _ = text_area_lines(
     key="outras_escalas_seguimento",
     placeholder="NIS, dinamometria, tempo de marcha, TUG, etc.",
 )
+
 
 # -----------------------------
 # 6) Exame físico neurológico
