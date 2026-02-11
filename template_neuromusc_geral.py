@@ -226,44 +226,59 @@ def _json_dumps_safe(obj) -> str:
     return json.dumps(obj, ensure_ascii=False, default=str)
 
 def restore_from_localstorage():
-    if "_autosave_restore_done" not in st.session_state:
-        st.session_state["_autosave_restore_done"] = False
+    # Must run BEFORE widgets are created.
+    if not st.session_state.get("_restore_pending", False):
+        return
 
-    # Unique suffix: changes when user clicks restore
-    suffix = str(st.session_state.get("_autosave_restore_request", "init"))
+    nonce = st.session_state.get("_restore_nonce", "init")
 
     raw = streamlit_js_eval(
         js_expressions=f"localStorage.getItem('{AUTOSAVE_STORAGE_KEY}')",
-        key=f"__autosave_get_{suffix}",
+        key=f"__draft_get_{nonce}",   # unique -> avoids duplicate key errors
     )
 
-    if not st.session_state["_autosave_restore_done"]:
-        if raw:
-            try:
-                blob = json.loads(raw)
-                ts = float(blob.get("_ts", 0))
-                payload = blob.get("payload", {})
+    # Two-pass: streamlit_js_eval returns value on the NEXT rerun
+    if raw is None:
+        # first pass: trigger next rerun to receive raw
+        st.rerun()
+        return
 
-                if time.time() - ts > AUTOSAVE_TTL_SECONDS:
-                    streamlit_js_eval(
-                        js_expressions=f"localStorage.removeItem('{AUTOSAVE_STORAGE_KEY}')",
-                        key=f"__autosave_rm_expired_{suffix}",
-                    )
-                else:
-                    for k, v in payload.items():
-                        if k in FORM_KEYS:
-                            st.session_state[k] = v
+    if not raw:
+        st.warning("Nenhum rascunho encontrado neste navegador.")
+        st.session_state["_restore_pending"] = False
+        return
 
-                    st.session_state["_autosave_restore_done"] = True
-                    st.rerun()
-                    return
-            except Exception:
-                streamlit_js_eval(
-                    js_expressions=f"localStorage.removeItem('{AUTOSAVE_STORAGE_KEY}')",
-                    key=f"__autosave_rm_bad_{suffix}",
-                )
+    try:
+        blob = json.loads(raw)
+        ts = float(blob.get("_ts", 0))
+        payload = blob.get("payload", {})
 
-        st.session_state["_autosave_restore_done"] = True
+        # TTL check (optional)
+        if time.time() - ts > AUTOSAVE_TTL_SECONDS:
+            streamlit_js_eval(
+                js_expressions=f"localStorage.removeItem('{AUTOSAVE_STORAGE_KEY}')",
+                key=f"__draft_rm_exp_{nonce}",
+            )
+            st.warning("Rascunho expirado (mais de 1 hora).")
+            st.session_state["_restore_pending"] = False
+            return
+
+        # Apply values
+        for k, v in payload.items():
+            if k in FORM_KEYS:
+                st.session_state[k] = v
+
+        st.session_state["_restore_pending"] = False
+        st.success("Rascunho restaurado neste navegador.")
+        st.rerun()
+
+    except Exception:
+        streamlit_js_eval(
+            js_expressions=f"localStorage.removeItem('{AUTOSAVE_STORAGE_KEY}')",
+            key=f"__draft_rm_bad_{nonce}",
+        )
+        st.session_state["_restore_pending"] = False
+        st.error("Rascunho corrompido. Foi apagado deste navegador.")
 
 def save_to_localstorage():
     """
@@ -279,9 +294,10 @@ def save_to_localstorage():
     raw = _json_dumps_safe(blob)
 
     # store raw JSON string safely
+    nonce = str(time.time())
     streamlit_js_eval(
         js_expressions=f"localStorage.setItem('{AUTOSAVE_STORAGE_KEY}', {json.dumps(raw)}); 'ok'",
-        key="__autosave_set",
+        key=f"__draft_set_{nonce}",
     )
 
 def clear_local_draft():
@@ -295,9 +311,62 @@ def clear_local_draft():
     st.rerun()
 
 def request_restore():
-    st.session_state["_autosave_restore_done"] = False
-    st.session_state["_autosave_restore_request"] = time.time()
+    st.session_state["_restore_pending"] = True
+    st.session_state["_restore_nonce"] = str(time.time())  # unique key suffix
     st.rerun()
+
+def draft_status_line():
+    """
+    Shows: 'Último rascunho salvo: 14:32 (há 12 min)'
+    Reads _ts from localStorage.
+    """
+    nonce = str(st.session_state.get("_draft_status_nonce", "init"))
+
+    raw = streamlit_js_eval(
+        js_expressions=f"localStorage.getItem('{AUTOSAVE_STORAGE_KEY}')",
+        key=f"__draft_status_get_{nonce}",
+    )
+
+    # Two-pass: first run raw is None, next run returns the value
+    if raw is None:
+        st.session_state["_draft_status_nonce"] = str(time.time())
+        st.rerun()
+        return
+
+    if not raw:
+        st.caption("Nenhum rascunho salvo neste navegador.")
+        return
+
+    try:
+        blob = json.loads(raw)
+        ts = float(blob.get("_ts", 0))
+        if ts <= 0:
+            st.caption("Nenhum rascunho salvo neste navegador.")
+            return
+
+        # expired?
+        age = time.time() - ts
+        if age > AUTOSAVE_TTL_SECONDS:
+            st.caption("Rascunho salvo anteriormente, mas já expirou (mais de 1 hora).")
+            return
+
+        # format time
+        saved_hm = time.strftime("%H:%M", time.localtime(ts))
+
+        # humanize age
+        mins = int(age // 60)
+        if mins < 1:
+            ago = "há poucos segundos"
+        elif mins < 60:
+            ago = f"há {mins} min"
+        else:
+            hrs = mins // 60
+            ago = f"há {hrs} h"
+
+        st.caption(f"Último rascunho salvo: {saved_hm} ({ago}).")
+
+    except Exception:
+        st.caption("Não foi possível ler o status do rascunho (arquivo corrompido?).")
 
 
 # =========================
@@ -321,6 +390,8 @@ if "export_mode" not in st.session_state:
 if "export_text" not in st.session_state:
     st.session_state["export_text"] = ""
 
+#  Must run before any widgets are created
+restore_from_localstorage()
 
 # =========================================================
 # 1) ANAMNESE
@@ -1289,29 +1360,20 @@ st.subheader("### Rascunho automático")
 c1, c2, c3 = st.columns([1.4, 1.4, 1.4])
 
 with c1:
-    if st.button(
-        "🔄 Restaurar",
-        key="btn_restore_draft",
-        help="Restaura o último rascunho salvo neste navegador (até 1 hora)."
-    ):
+    if st.button("🔄 Restaurar", key="btn_restore_draft"):
         request_restore()
 
 with c2:
-    if st.button(
-        "🗑️ Limpar",
-        key="btn_clear_draft",
-        help="Remove o rascunho salvo neste navegador."
-    ):
+    if st.button("🗑️ Limpar", key="btn_clear_draft"):
         clear_local_draft()
 
 with c3:
-    if st.button(
-        "💾 Salvar agora",
-        key="btn_manual_save_draft",
-        type="primary",
-        help="Salva manualmente o estado atual do formulário."
-    ):
+    if st.button("💾 Salvar agora", key="btn_manual_save_draft", type="primary"):
         save_to_localstorage()
         st.success("Rascunho salvo neste navegador.")
+        st.session_state["_draft_status_nonce"] = str(time.time())  # refresh status
+
+# ✅ small line under buttons
+draft_status_line()
 
 
