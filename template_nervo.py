@@ -44,6 +44,37 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
+st.markdown(
+    """
+    <style>
+      /* Reduce space AFTER subtitles like "Tratamento atual:" */
+      .tight-subtitle {
+        margin-bottom: 0.25rem !important;
+      }
+
+      /* Reduce space BEFORE radio / checkbox groups */
+      div[data-testid="stRadio"] {
+        margin-top: 0.2rem !important;
+      }
+
+      div[data-testid="stCheckbox"] {
+        margin-top: 0.2rem !important;
+      }
+
+      /* Reduce space between labels and text areas */
+      div[data-testid="stTextArea"] {
+        margin-top: 0.2rem !important;
+      }
+
+      /* Reduce space between markdown subtitles and following widgets */
+      .block-container > div > div > div {
+        row-gap: 0.4rem;
+      }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
 
 st.title("TEMPLATE NERVO PERIFÉRICO - CONSULTA INICIAL E RETORNO")
 
@@ -97,6 +128,11 @@ def small_mrc_box(key: str):
         max_chars=1,
     )
 
+def subtitle(text: str):
+    st.markdown(
+        f'<div class="tight-subtitle"><strong>{text}</strong></div>',
+        unsafe_allow_html=True,
+    )
 
 # -----------------------------
 # 1) História clínica
@@ -153,7 +189,7 @@ if esporadico and familiar:
 # 4) Medicações modificadoras de doença/Imunossupressores
 # -----------------------------
 st.subheader("Medicações modificadoras de doença/Imunossupressores")
-st.markdown("**Tratamento atual:**")
+subtitle("Tratamento atual:")
 
 tratamento_atual = st.radio(
     "",
@@ -179,7 +215,7 @@ elif tratamento_atual == "sem tratamento medicamentoso":
         placeholder="Ex.: 3 meses / desde 2021",
     )
 
-st.markdown("**Medicamentos de uso atual ou prévio, com data de início, data de término e motivo da suspensão**")
+subtitle("Medicamentos de uso atual ou prévio")
 meds_atual_previo = text_area_lines(
     label="",
     lines=5,
@@ -187,7 +223,7 @@ meds_atual_previo = text_area_lines(
     placeholder="",
 )
 
-st.markdown("**Outros medicamentos**")
+subtitle("Outros medicamentos")
 outros_meds = text_area_lines(
     label="",
     lines=5,
@@ -202,7 +238,7 @@ transplantado = st.checkbox("Paciente transplantado", key="paciente_transplantad
 # -----------------------------
 st.subheader("Evolução clínica")
 
-st.markdown("**Controle atual:**")
+subtitle("Controle atual:")
 
 controle_atual = st.radio(
     "",
@@ -221,7 +257,7 @@ if controle_atual == "estável ou melhorando":
         placeholder="Ex.: 2 meses",
     )
 
-st.markdown("**Descrição da evolução:**")
+subtitle("Descrição da evolução:")
 descricao_evo = text_area_lines(
     label="",
     lines=5,
@@ -343,7 +379,7 @@ if "mrc_ss_total" not in st.session_state:
 
 inline_label_display("Escala MRC-SS", str(st.session_state["mrc_ss_total"]) if st.session_state["mrc_ss_total"] != "" else "")
 
-st.markdown("**Outras escalas e métricas de seguimento**")
+subtitle("Outras escalas e métricas de seguimento")
 _ = text_area_lines(
     label="",
     lines=5,
@@ -419,7 +455,7 @@ with bcalc2:
 # -----------------------------
 st.subheader("Exames complementares")
 
-st.markdown("**ENMG**")
+subtitle("ENMG")
 _ = text_area_lines(
     label="",
     lines=3,
@@ -427,7 +463,7 @@ _ = text_area_lines(
     placeholder="Data e conclusão da ENMG",
 )
 
-st.markdown("**Líquor**")
+subtitle("**Líquor**")
 _ = text_area_lines(
     label="",
     lines=3,
@@ -435,7 +471,7 @@ _ = text_area_lines(
     placeholder="Data e achados do líquor",
 )
 
-st.markdown("**USG nervos**")
+subtitle("USG nervos")
 _ = text_area_lines(
     label="",
     lines=3,
@@ -443,7 +479,7 @@ _ = text_area_lines(
     placeholder="Data e achados do USG",
 )
 
-st.markdown("**Biópsia**")
+subtitle("Biópsia")
 _ = text_area_lines(
     label="",
     lines=3,
@@ -451,7 +487,7 @@ _ = text_area_lines(
     placeholder="Data e achados da  biópsia de nervo, glândulas salivares, panículo adiposo, etc.",
 )
 
-st.markdown("**Demais exames**")
+subtitle("Demais exames")
 _ = text_area_lines(
     label="",
     lines=3,
