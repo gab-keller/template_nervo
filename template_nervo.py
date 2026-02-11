@@ -275,8 +275,20 @@ descricao_evo = text_area_lines(
 )
 
 # -----------------------------
-# INCAT selector (no st.dialog) - AUTO-UPDATES DISPLAY
+# INCAT + PND selector (no st.dialog) - AUTO-UPDATES DISPLAY
 # -----------------------------
+
+def ll_to_pnd(ll_value: int) -> str:
+    if ll_value == 0:
+        return "PND I"
+    if ll_value == 1:
+        return "PND II"
+    if ll_value == 2:
+        return "PND IIIa"
+    if ll_value in (3, 4):
+        return "PND IIIb"
+    return "PND IV"  # ll == 5
+
 
 # state init
 if "incat_open" not in st.session_state:
@@ -286,20 +298,38 @@ if "incat_ul" not in st.session_state:
 if "incat_ll" not in st.session_state:
     st.session_state["incat_ll"] = 0
 if "incat_total" not in st.session_state:
-    st.session_state["incat_total"] = ""  # will store int or ""
+    st.session_state["incat_total"] = ""   # formatted string
+if "pnd_total" not in st.session_state:
+    st.session_state["pnd_total"] = ""     # formatted string like "PND II"
 
 
-c_incat_btn, c_incat_box, _f = st.columns([1.6, 3.0, 10.0], vertical_alignment="center")
+c_incat_btn, c_incat_box1, c_incat_box2, _f = st.columns(
+    [1.9, 2.6, 2.0, 10.0], vertical_alignment="center"
+)
 
 with c_incat_btn:
-    if st.button("Escala INCAT", key="btn_open_incat"):
+    if st.button("Escala INCAT e PND", key="btn_open_incat"):
         st.session_state["incat_open"] = True
 
-with c_incat_box:
-    # IMPORTANT: no key here, so it always reflects st.session_state["incat_total"]
+with c_incat_box1:
     st.text_input(
         "Escala INCAT (MMSS + MMII)",
-        value=str(st.session_state["incat_total"]) if st.session_state["incat_total"] != "" else "",
+        value=(
+            str(st.session_state["incat_total"])
+            if st.session_state["incat_total"] != ""
+            else "Calculada automaticamente"
+        ),
+        disabled=True,
+    )
+
+with c_incat_box2:
+    st.text_input(
+        "Escala PND",
+        value=(
+            str(st.session_state["pnd_total"])
+            if st.session_state["pnd_total"] != ""
+            else "Calculada automaticamente"
+        ),
         disabled=True,
     )
 
@@ -311,12 +341,13 @@ if st.session_state["incat_open"]:
     st.markdown("**Membros Superiores**")
     ul_options = {
         0: "0 – Sem problemas nos membros superiores.",
-        1: ("1 – Sintomas em um ou ambos os braços, sem afetar a capacidade de realizar nenhuma das seguintes funções:\n"
+        1: (
+            "1 – Sintomas em um ou ambos os braços, sem afetar a capacidade de realizar nenhuma das seguintes funções:\n"
             "• fechar todos os zíperes e botões\n"
             "• lavar ou pentear o cabelo\n"
             "• usar faca e garfo juntos\n"
             "• manusear moedas pequenas"
-            ),
+        ),
         2: "2 – Sintomas em um ou ambos os braços, afetando, mas não impedindo, nenhuma das funções acima.",
         3: "3 – Sintomas em um ou ambos os braços, impedindo uma ou duas das funções listadas acima.",
         4: "4 – Sintomas em um ou ambos os braços, impedindo três ou todas as funções listadas acima, mas ainda com alguns movimentos propositais possíveis.",
@@ -356,16 +387,20 @@ if st.session_state["incat_open"]:
         key="radio_incat_ll",
     )
 
-    # Compute total live
+    # Compute live
     ul = int(st.session_state["incat_ul"])
     ll = int(st.session_state["incat_ll"])
     total = ul + ll
-    st.markdown(f"**MMSS ({ul}) + MMII ({ll}) = {total}**")
+    pnd = ll_to_pnd(ll)
 
-    b1, b2, _bfill = st.columns([1, 1, 10.0])
+    st.markdown(f"**MMSS ({ul}) + MMII ({ll}) = {total}**")
+    st.markdown(f"**PND: {pnd}**")
+
+    b1, b2, _bfill = st.columns([1.2, 1.0, 10.0])
     with b1:
-        if st.button("Salvar INCAT", key="btn_save_incat", type="primary"):
+        if st.button("Salvar INCAT/PND", key="btn_save_incat", type="primary"):
             st.session_state["incat_total"] = f"MMSS ({ul}) + MMII ({ll}) = {total}"
+            st.session_state["pnd_total"] = pnd
             st.session_state["incat_open"] = False
             st.rerun()
 
@@ -374,7 +409,8 @@ if st.session_state["incat_open"]:
             st.session_state["incat_open"] = False
             st.rerun()
 
-# ---- MRC-SS display (right after INCAT) ----
+
+# ---- MRC-SS display (right after INCAT/PND) ----
 mrc_keys = [
     "mrc_ombro_D", "mrc_ombro_E",
     "mrc_cotovelo_D", "mrc_cotovelo_E",
@@ -385,20 +421,11 @@ mrc_keys = [
 ]
 
 if "mrc_ss_total" not in st.session_state:
-    st.session_state["mrc_ss_total"] = ""   # stays blank until user calculates
+    st.session_state["mrc_ss_total"] = ""  # stays blank until user calculates
 
 inline_label_display(
-    "Escala MRC-SS<br><span style='font-size:0.85em; color:#666'>(calculada automaticamente, conforme exame físico)</span>",
-    str(st.session_state["mrc_ss_total"]) if st.session_state["mrc_ss_total"] != "" else ""
-)
-
-
-st.markdown("**Outras escalas e métricas de seguimento**")
-_ = text_area_lines(
-    label="",
-    lines=5,
-    key="outras_escalas_seguimento",
-    placeholder="NIS, dinamometria, tempo de marcha, TUG, etc.",
+    "Escala MRC-SS<br><span style='font-size:0.85em; color:#666'>(Calculada automaticamente, conforme exame físico)</span>",
+    str(st.session_state["mrc_ss_total"]) if st.session_state["mrc_ss_total"] != "" else "Calculada automaticamente, conforme exame físico",
 )
 
 
