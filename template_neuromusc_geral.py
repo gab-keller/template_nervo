@@ -253,7 +253,7 @@ _ = text_area_lines(
 # =========================================================
 # 8) AVALIAÇÃO FUNCIONAL (panel summary)
 # =========================================================
-st.markdown("Avaliação funcional")
+st.markdown("**Avaliação funcional**")
 
 cL, cR = st.columns([2.2, 9.8], vertical_alignment="top")
 with cL:
@@ -423,7 +423,7 @@ if st.session_state["func_open"]:
 # =========================================================
 # 9) SEGUIMENTO MULTIDISCIPLINAR
 # =========================================================
-st.markdown("Seguimento multidisciplinar")
+st.markdown("**Seguimento multidisciplinar**")
 
 def freq_row(label: str, check_key: str, freq_key: str):
     c0, c1, c2, _f = st.columns([3.2, 1.6, 2.2, 10.0], vertical_alignment="center")
@@ -710,30 +710,6 @@ st.markdown("**Outros exames**")
 _ = text_area_lines("", 3, "ex_outros", placeholder="")
 
 # =========================================================
-# 13) DIAGNÓSTICO TOPOGRÁFICO
-# =========================================================
-st.subheader("Diagnóstico topográfico")
-
-topo_options = [
-    "Central",
-    "Ponta anterior",
-    "Gânglio da raiz dorsal",
-    "Raiz",
-    "Polirradiculoneuropatia",
-    "Polineuropatia",
-    "Mononeuropatia",
-    "Múltiplos nervos",
-    "Junção neuromuscular",
-    "Músculo esquelético",
-    "Funcional",
-    "Outro",
-]
-topo = st.selectbox("Selecione", options=topo_options, index=0, key="dx_topografico")
-
-if topo == "Outro":
-    _ = inline_label_input("Especifique", key="dx_topografico_outro", placeholder="")
-
-# =========================================================
 # 14) TESTE GENÉTICO
 # =========================================================
 st.subheader("Teste genético")
@@ -756,6 +732,30 @@ if tg == "Teste genético realizado":
     _ = inline_label_input("Exame genético realizado", key="tg_exame_nome", placeholder="Ex.: Painel miopatias / Exoma / MLPA / etc.")
     _ = inline_label_input("Data", key="tg_data", placeholder="Ex.: 10/2024")
     _ = inline_label_input("Local do exame", key="tg_local", placeholder="Ex.: Fleury / Einstein / laboratório X")
+
+# =========================================================
+# 13) DIAGNÓSTICO TOPOGRÁFICO
+# =========================================================
+st.subheader("Diagnóstico topográfico")
+
+topo_options = [
+    "Central",
+    "Ponta anterior",
+    "Gânglio da raiz dorsal",
+    "Raiz",
+    "Polirradiculoneuropatia",
+    "Polineuropatia",
+    "Mononeuropatia",
+    "Múltiplos nervos",
+    "Junção neuromuscular",
+    "Músculo esquelético",
+    "Funcional",
+    "Outro",
+]
+topo = st.selectbox("Selecione", options=topo_options, index=0, key="dx_topografico")
+
+if topo == "Outro":
+    _ = inline_label_input("Especifique", key="dx_topografico_outro", placeholder="")
 
 # =========================================================
 # 15) DIAGNÓSTICO NOSOLÓGICO
