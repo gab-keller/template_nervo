@@ -98,6 +98,27 @@ def inline_label_display(label_text: str, value: str):
         st.text_input("", value=value, disabled=True, label_visibility="collapsed")
 
 
+
+def small_mrc_box(key: str):
+    return st.text_input(
+        "Valor (0–5)",   # <- FIXED accessibility issue here too
+        key=key,
+        placeholder="0-5",
+        label_visibility="collapsed",
+        max_chars=1,
+    )
+
+
+# ✅ DEFINE HERE — BEFORE ANY compute_mrc_ss CALL
+mrc_keys = [
+    "mrc_ombro_D", "mrc_ombro_E",
+    "mrc_cotovelo_D", "mrc_cotovelo_E",
+    "mrc_punho_D", "mrc_punho_E",
+    "mrc_quadril_D", "mrc_quadril_E",
+    "mrc_joelho_D", "mrc_joelho_E",
+    "mrc_tornozelo_D", "mrc_tornozelo_E",
+]
+
 def compute_mrc_ss(mrc_keys: list[str]) -> tuple[bool, int | None]:
     """
     Returns (is_complete_and_valid, total_or_None)
@@ -116,17 +137,6 @@ def compute_mrc_ss(mrc_keys: list[str]) -> tuple[bool, int | None]:
             return (False, None)
         values.append(iv)
     return (True, sum(values))
-
-
-def small_mrc_box(key: str):
-    return st.text_input(
-        "",
-        key=key,
-        placeholder="0-5",
-        label_visibility="collapsed",
-        max_chars=1,
-    )
-
 
 # -----------------------------
 # 1) História clínica
