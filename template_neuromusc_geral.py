@@ -1286,21 +1286,39 @@ if export_text:
 
 st.divider()
 
-st.markdown("### Rascunho automático (navegador atual)")
+st.subheader("### Rascunho automático")
 
-col1, col2 = st.columns(2)
+c1, c2, c3 = st.columns([1.4, 1.4, 1.4])
 
-with col1:
-    if st.button("🔄 Restaurar rascunho salvo neste navegador"):
+with c1:
+    if st.button(
+        "🔄 Restaurar",
+        key="btn_restore_draft",
+        help="Restaura o último rascunho salvo neste navegador (até 1 hora)."
+    ):
         st.session_state["_autosave_restore_done"] = False
         restore_from_localstorage()
 
-with col2:
-    if st.button("🗑️ Limpar rascunho salvo neste navegador"):
+with c2:
+    if st.button(
+        "🗑️ Limpar",
+        key="btn_clear_draft",
+        help="Remove o rascunho salvo neste navegador."
+    ):
         clear_local_draft()
 
+with c3:
+    if st.button(
+        "💾 Salvar agora",
+        key="btn_manual_save_draft",
+        type="primary",
+        help="Salva manualmente o estado atual do formulário."
+    ):
+        save_to_localstorage()
+        st.success("Rascunho salvo neste navegador.")
 
-# ✅ MUST run before widgets
+
+# MUST run before widgets
 save_to_localstorage()
 
 
