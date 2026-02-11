@@ -429,10 +429,9 @@ if st.session_state["incat_open"]:
 
     st.markdown(f"**MMSS ({ul}) + MMII ({ll}) = {total}**")
     st.markdown(f"**PND: {pnd}**")
-
-   b1, b2, _bfill = st.columns([1.4, 1.0, 10.0])
-
-   with b1:
+    
+b1, b2, _bfill = st.columns([1.4, 1.0, 10.0])
+    with b1:
         if st.button("Salvar INCAT/PND", key="btn_save_incat", type="primary"):
             incat_str = f"MMSS ({ul}) + MMII ({ll}) = {total}"
             pnd_str = pnd
