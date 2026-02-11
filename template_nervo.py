@@ -336,18 +336,6 @@ with c_right:
         disabled=True,
     )
 
-    # PND display (below)
-    st.text_input(
-        "Escala PND",
-        value=(
-            str(st.session_state["pnd_total"])
-            if st.session_state["pnd_total"] != ""
-            else "Calculada automaticamente"
-        ),
-        disabled=True,
-        key="display_pnd_total",
-    )
-
     # MRC-SS (below PND, aligned + wide)
     mrc_display_value = (
         str(st.session_state["mrc_ss_total"])
