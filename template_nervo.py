@@ -776,7 +776,7 @@ def build_export_text(include_all: bool) -> str:
 
 # --- UI: choose export mode (switchable) ---
 st.divider()
-st.subheader("Exportação (copiar e colar no Notepad)")
+st.subheader("Exportação")
 
 if "export_mode" not in st.session_state:
     st.session_state["export_mode"] = None  # "evolucao" | "completo" | None
@@ -789,7 +789,7 @@ with c_exp2:
     if st.button("Exportar histórico completo", key="btn_export_completo"):
         st.session_state["export_mode"] = "completo"
 with c_exp3:
-    if st.button("Limpar exportação", key="btn_clear_export"):
+    if st.button("Trocar modalidade de exportação", key="btn_clear_export"):
         st.session_state["export_mode"] = None
         st.session_state["export_text"] = ""
         st.rerun()
