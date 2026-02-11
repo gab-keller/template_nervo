@@ -155,7 +155,7 @@ descricao_evo = text_area_lines(
 )
 
 # -----------------------------
-# INCAT selector (auto-updating display)
+# INCAT selector (no st.dialog) - AUTO-UPDATES DISPLAY
 # -----------------------------
 
 # state init
@@ -166,13 +166,8 @@ if "incat_ul" not in st.session_state:
 if "incat_ll" not in st.session_state:
     st.session_state["incat_ll"] = 0
 if "incat_total" not in st.session_state:
-    st.session_state["incat_total"] = ""  # will hold an int or ""
+    st.session_state["incat_total"] = ""  # will store int or ""
 
-def _recalc_incat_total():
-    st.session_state["incat_total"] = int(st.session_state["incat_ul"]) + int(st.session_state["incat_ll"])
-
-# Make sure total is consistent on every run
-_recalc_incat_total()
 
 c_incat_btn, c_incat_box, _f = st.columns([1.6, 3.0, 10.0], vertical_alignment="center")
 
@@ -181,12 +176,13 @@ with c_incat_btn:
         st.session_state["incat_open"] = True
 
 with c_incat_box:
-    # Bind textbox directly to session_state["incat_total"]
+    # IMPORTANT: no key here, so it always reflects st.session_state["incat_total"]
     st.text_input(
         "Escala INCAT (UL + LL)",
-        key="incat_total",      # <-- same key used as the value store
+        value=str(st.session_state["incat_total"]) if st.session_state["incat_total"] != "" else "",
         disabled=True,
     )
+
 
 # "Popup" (conditional panel)
 if st.session_state["incat_open"]:
@@ -206,13 +202,15 @@ if st.session_state["incat_open"]:
         5: "5 – Incapacidade de usar qualquer braço para qualquer movimento com finalidade.",
     }
 
-    st.radio(
+    if st.session_state["incat_ul"] not in ul_options:
+        st.session_state["incat_ul"] = 0
+
+    st.session_state["incat_ul"] = st.radio(
         "Selecione UMA opção (MMSS)",
         options=list(ul_options.keys()),
         format_func=lambda k: ul_options[k],
         index=list(ul_options.keys()).index(st.session_state["incat_ul"]),
-        key="incat_ul",
-        on_change=_recalc_incat_total,   # <-- updates textbox immediately
+        key="radio_incat_ul",
     )
 
     st.markdown("---")
@@ -226,21 +224,25 @@ if st.session_state["incat_open"]:
         5: "5 – Restrito à cadeira de rodas, incapaz de ficar em pé ou andar, ou apenas alguns passos mesmo com ajuda.",
     }
 
-    st.radio(
+    if st.session_state["incat_ll"] not in ll_options:
+        st.session_state["incat_ll"] = 0
+
+    st.session_state["incat_ll"] = st.radio(
         "Selecione UMA opção (MMII)",
         options=list(ll_options.keys()),
         format_func=lambda k: ll_options[k],
         index=list(ll_options.keys()).index(st.session_state["incat_ll"]),
-        key="incat_ll",
-        on_change=_recalc_incat_total,   # <-- updates textbox immediately
+        key="radio_incat_ll",
     )
 
-    st.markdown(f"**Total (UL + LL): {st.session_state['incat_total']}**")
+    # Compute total live
+    total = int(st.session_state["incat_ul"]) + int(st.session_state["incat_ll"])
+    st.markdown(f"**Total (UL + LL): {total}**")
 
     b1, b2, _bfill = st.columns([1, 1, 10.0])
     with b1:
         if st.button("Salvar INCAT", key="btn_save_incat", type="primary"):
-            # total already updated; just close
+            st.session_state["incat_total"] = total
             st.session_state["incat_open"] = False
             st.rerun()
     with b2:
