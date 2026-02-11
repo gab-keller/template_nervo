@@ -1318,7 +1318,3 @@ with c3:
         st.success("Rascunho salvo neste navegador.")
 
 
-# MUST run before widgets
-save_to_localstorage()
-
-
