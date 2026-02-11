@@ -6,33 +6,59 @@ st.set_page_config(
     layout="wide",
 )
 
+# --- CSS: remove the gutter/padding that creates the big gap between label and input ---
+st.markdown(
+    """
+    <style>
+      /* Reduce (almost eliminate) the gap between columns everywhere */
+      div[data-testid="stHorizontalBlock"]{
+        gap: 0.15rem !important;
+      }
+
+      /* Remove left/right padding inside each column */
+      div[data-testid="column"]{
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+      }
+
+      /* Make markdown text vertically centered and tightly aligned */
+      .inline-label{
+        margin: 0 !important;
+        padding: 0 !important;
+        line-height: 1.6 !important;
+        white-space: nowrap !important;
+      }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
 st.title("TEMPLATE NERVO PERIFÉRICO - CONSULTA INICIAL E RETORNO")
 
 
-# Helper: approximate "N lines" of space in a text area
 def text_area_lines(label: str, lines: int, key: str, placeholder: str = ""):
     height_px = max(80, int(lines * 24 + 20))
     return st.text_area(label, key=key, height=height_px, placeholder=placeholder)
 
 
-# Helper: put a label and an input *immediately beside it* (minimal gap)
 def inline_label_input(
     label_text: str,
     key: str,
     placeholder: str = "",
-    input_width_ratio: float = 1.5,
-    label_bold: bool = False,
+    label_col_ratio: float = 0.55,
+    input_col_ratio: float = 5.0,
 ):
-    # 0px gap between columns isn't possible in Streamlit, but this gets very close.
-    # Small label col + input col, with minimal markdown padding.
+    # Very small label column + large input column, and CSS removes the gutter/padding.
     col_label, col_input = st.columns(
-        [1, input_width_ratio], vertical_alignment="center", gap="small"
+        [label_col_ratio, input_col_ratio],
+        vertical_alignment="center",
     )
     with col_label:
-        if label_bold:
-            st.markdown(f"**{label_text}**")
-        else:
-            st.markdown(label_text)
+        # HTML span with nowrap so the label hugs the input
+        st.markdown(
+            f'<div class="inline-label">{label_text}</div>',
+            unsafe_allow_html=True,
+        )
     with col_input:
         return st.text_input(
             label="",
@@ -51,8 +77,6 @@ idade_inicio = inline_label_input(
     label_text="Idade ao início dos sintomas",
     key="idade_inicio_sintomas",
     placeholder="Ex.: 45",
-    input_width_ratio=1.2,
-    label_bold=False,
 )
 
 historia_clinica = text_area_lines(
@@ -85,9 +109,9 @@ hist_familiar = text_area_lines(
 )
 
 # "Padrão de herança" + two checkboxes in the same line
-ph1, ph2, ph3 = st.columns([1.2, 1, 1], vertical_alignment="center", gap="small")
+ph1, ph2, ph3 = st.columns([0.9, 1.0, 1.0], vertical_alignment="center")
 with ph1:
-    st.markdown("Padrão de herança")
+    st.markdown('<div class="inline-label">Padrão de herança</div>', unsafe_allow_html=True)
 with ph2:
     esporadico = st.checkbox("Esporádico", key="hf_esporadico")
 with ph3:
@@ -100,7 +124,6 @@ if esporadico and familiar:
 # 4) Medicações modificadoras de doença/Imunossupressores
 # -----------------------------
 st.subheader("Medicações modificadoras de doença/Imunossupressores")
-
 st.markdown("**Tratamento atual:**")
 
 t1 = st.checkbox("em uso de tratamento medicamentoso", key="trat_em_uso")
@@ -109,8 +132,8 @@ if t1:
         label_text="há quanto tempo",
         key="trat_em_uso_tempo",
         placeholder="Ex.: 6 meses / 2 anos",
-        input_width_ratio=1.6,
-        label_bold=False,
+        label_col_ratio=0.45,
+        input_col_ratio=5.0,
     )
 
 t2 = st.checkbox("sem tratamento medicamentoso", key="trat_sem")
@@ -119,8 +142,8 @@ if t2:
         label_text="há quanto tempo",
         key="trat_sem_tempo",
         placeholder="Ex.: 3 meses / desde 2021",
-        input_width_ratio=1.6,
-        label_bold=False,
+        label_col_ratio=0.45,
+        input_col_ratio=5.0,
     )
 
 if t1 and t2:
@@ -143,3 +166,22 @@ outros_meds = text_area_lines(
 )
 
 transplantado = st.checkbox("Paciente transplantado", key="paciente_transplantado")
+
+with st.expander("Visualizar dados (debug)", expanded=False):
+    st.json(
+        {
+            "idade_inicio_sintomas": idade_inicio,
+            "historia_clinica": historia_clinica,
+            "antecedentes_patologicos": antecedentes,
+            "historia_familiar": hist_familiar,
+            "padrao_heranca_esporadico": esporadico,
+            "padrao_heranca_familiar": familiar,
+            "trat_em_uso": t1,
+            "trat_em_uso_tempo": st.session_state.get("trat_em_uso_tempo", ""),
+            "trat_sem": t2,
+            "trat_sem_tempo": st.session_state.get("trat_sem_tempo", ""),
+            "meds_atual_previo": meds_atual_previo,
+            "outros_meds": outros_meds,
+            "paciente_transplantado": transplantado,
+        }
+    )
