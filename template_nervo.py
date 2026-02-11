@@ -47,33 +47,32 @@ st.markdown(
 st.markdown(
     """
     <style>
-      /* Reduce space AFTER subtitles like "Tratamento atual:" */
-      .tight-subtitle {
-        margin-bottom: 0.25rem !important;
-      }
+      /* ===== GLOBAL VERTICAL SPACING CONTROL ===== */
 
-      /* Reduce space BEFORE radio / checkbox groups */
-      div[data-testid="stRadio"] {
-        margin-top: 0.2rem !important;
-      }
-
-      div[data-testid="stCheckbox"] {
-        margin-top: 0.2rem !important;
-      }
-
-      /* Reduce space between labels and text areas */
+      /* Reduce space ABOVE text areas */
       div[data-testid="stTextArea"] {
-        margin-top: 0.2rem !important;
+        margin-top: -0.6rem !important;
       }
 
-      /* Reduce space between markdown subtitles and following widgets */
-      .block-container > div > div > div {
-        row-gap: 0.4rem;
+      /* Reduce space ABOVE radio groups */
+      div[data-testid="stRadio"] {
+        margin-top: -0.4rem !important;
+      }
+
+      /* Reduce space ABOVE checkbox groups */
+      div[data-testid="stCheckbox"] {
+        margin-top: -0.4rem !important;
+      }
+
+      /* Reduce space AFTER markdown subtitles */
+      div[data-testid="stMarkdown"] {
+        margin-bottom: 0.2rem !important;
       }
     </style>
     """,
     unsafe_allow_html=True,
 )
+
 
 
 st.title("TEMPLATE NERVO PERIFÉRICO - CONSULTA INICIAL E RETORNO")
@@ -128,11 +127,6 @@ def small_mrc_box(key: str):
         max_chars=1,
     )
 
-def subtitle(text: str):
-    st.markdown(
-        f'<div class="tight-subtitle"><strong>{text}</strong></div>',
-        unsafe_allow_html=True,
-    )
 
 # -----------------------------
 # 1) História clínica
@@ -189,7 +183,7 @@ if esporadico and familiar:
 # 4) Medicações modificadoras de doença/Imunossupressores
 # -----------------------------
 st.subheader("Medicações modificadoras de doença/Imunossupressores")
-subtitle("Tratamento atual:")
+st.markdown("**Tratamento atual:**")
 
 tratamento_atual = st.radio(
     "",
@@ -215,7 +209,7 @@ elif tratamento_atual == "sem tratamento medicamentoso":
         placeholder="Ex.: 3 meses / desde 2021",
     )
 
-subtitle("Medicamentos de uso atual ou prévio")
+st.markdown("**Medicamentos de uso atual ou prévio, com data de início, data de término e motivo da suspensão**")
 meds_atual_previo = text_area_lines(
     label="",
     lines=5,
@@ -223,7 +217,7 @@ meds_atual_previo = text_area_lines(
     placeholder="",
 )
 
-subtitle("Outros medicamentos")
+st.markdown("**Outros medicamentos**")
 outros_meds = text_area_lines(
     label="",
     lines=5,
@@ -238,7 +232,7 @@ transplantado = st.checkbox("Paciente transplantado", key="paciente_transplantad
 # -----------------------------
 st.subheader("Evolução clínica")
 
-subtitle("Controle atual:")
+st.markdown("**Controle atual:**")
 
 controle_atual = st.radio(
     "",
@@ -257,7 +251,7 @@ if controle_atual == "estável ou melhorando":
         placeholder="Ex.: 2 meses",
     )
 
-subtitle("Descrição da evolução:")
+st.markdown("**Descrição da evolução:**")
 descricao_evo = text_area_lines(
     label="",
     lines=5,
@@ -379,7 +373,7 @@ if "mrc_ss_total" not in st.session_state:
 
 inline_label_display("Escala MRC-SS", str(st.session_state["mrc_ss_total"]) if st.session_state["mrc_ss_total"] != "" else "")
 
-subtitle("Outras escalas e métricas de seguimento")
+st.markdown("**Outras escalas e métricas de seguimento**")
 _ = text_area_lines(
     label="",
     lines=5,
@@ -455,7 +449,7 @@ with bcalc2:
 # -----------------------------
 st.subheader("Exames complementares")
 
-subtitle("ENMG")
+st.markdown("**ENMG**")
 _ = text_area_lines(
     label="",
     lines=3,
@@ -463,7 +457,7 @@ _ = text_area_lines(
     placeholder="Data e conclusão da ENMG",
 )
 
-subtitle("**Líquor**")
+st.markdown("**Líquor**")
 _ = text_area_lines(
     label="",
     lines=3,
@@ -471,7 +465,7 @@ _ = text_area_lines(
     placeholder="Data e achados do líquor",
 )
 
-subtitle("USG nervos")
+st.markdown("**USG nervos**")
 _ = text_area_lines(
     label="",
     lines=3,
@@ -479,7 +473,7 @@ _ = text_area_lines(
     placeholder="Data e achados do USG",
 )
 
-subtitle("Biópsia")
+st.markdown("**Biópsia**")
 _ = text_area_lines(
     label="",
     lines=3,
@@ -487,7 +481,7 @@ _ = text_area_lines(
     placeholder="Data e achados da  biópsia de nervo, glândulas salivares, panículo adiposo, etc.",
 )
 
-subtitle("Demais exames")
+st.markdown("**Demais exames**")
 _ = text_area_lines(
     label="",
     lines=3,
