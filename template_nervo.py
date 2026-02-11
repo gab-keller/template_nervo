@@ -96,12 +96,6 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-
-
-
-st.title("TEMPLATE NERVO PERIFÉRICO - CONSULTA INICIAL E RETORNO")
-
-
 def text_area_lines(label: str, lines: int, key: str, placeholder: str = ""):
     height_px = max(80, int(lines * 24 + 20))
     return st.text_area(label, key=key, height=height_px, placeholder=placeholder)
