@@ -155,8 +155,6 @@ if esporadico and familiar:
 st.subheader("Medicações modificadoras de doença/Imunossupressores")
 st.markdown("**Tratamento atual:**")
 
-st.markdown("**Tratamento atual:**")
-
 tratamento_atual = st.radio(
     "",
     options=[
