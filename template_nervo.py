@@ -436,9 +436,6 @@ _ = text_area_lines(
 # -----------------------------
 st.subheader("Diagnóstico/Hipótese diagnóstica:")
 
-if "dx_categoria" not in st.session_state:
-    st.session_state["dx_categoria"] = "Diagnóstico indefinido"
-
 dx_options = [
     "Neuropatia genética",
     "Neuropatia imunomediada",
@@ -450,50 +447,67 @@ dx_options = [
 dx_categoria = st.radio(
     "Selecione UMA opção",
     options=dx_options,
-    index=dx_options.index(st.session_state["dx_categoria"]) if st.session_state["dx_categoria"] in dx_options else 4,
     key="radio_dx_categoria",
 )
 
-# Submenus (appear conditionally)
-dx_genetica_choices = []
-dx_imuno_choices = []
-
+# ---- Submenu: Neuropatia genética (single choice) ----
 if dx_categoria == "Neuropatia genética":
     with st.expander("Detalhar (Neuropatia genética)", expanded=True):
-        dx_genetica_choices = st.multiselect(
-            "Genes / causas (pode selecionar múltiplos)",
-            options=["PMP22", "MPZ", "GJB1", "MFN2", "outro"],
-            default=st.session_state.get("dx_genetica_choices", []),
-            key="dx_genetica_choices",
+        gen_options = ["PMP22", "MPZ", "GJB1", "MFN2", "outro"]
+        dx_genetica_choice = st.radio(
+            "Gene / causa (selecione UMA opção)",
+            options=gen_options,
+            key="dx_genetica_choice",
         )
 
+        if dx_genetica_choice == "outro":
+            st.text_input(
+                "Especifique (outro)",
+                key="dx_genetica_outro",
+                placeholder="Ex.: SH3TC2, NEFL, TTR, etc.",
+            )
+
+# ---- Submenu: Neuropatia imunomediada (single choice) ----
 if dx_categoria == "Neuropatia imunomediada":
     with st.expander("Detalhar (Neuropatia imunomediada)", expanded=True):
-        dx_imuno_choices = st.multiselect(
-            "Subtipos (pode selecionar múltiplos)",
-            options=["CIDP", "vasculite", "ganglionopatia", "neuropatia motora multifocal", "outros"],
-            default=st.session_state.get("dx_imuno_choices", []),
-            key="dx_imuno_choices",
+        imuno_options = ["CIDP", "vasculite", "ganglionopatia", "neuropatia motora multifocal", "outros"]
+        dx_imuno_choice = st.radio(
+            "Subtipo (selecione UMA opção)",
+            options=imuno_options,
+            key="dx_imuno_choice",
         )
 
-# Optional: a small auto-summary field (comment out if you don't want it)
-dx_summary_parts = [dx_categoria]
-if dx_categoria == "Neuropatia genética" and st.session_state.get("dx_genetica_choices"):
-    dx_summary_parts.append("Genes: " + ", ".join(st.session_state["dx_genetica_choices"]))
-if dx_categoria == "Neuropatia imunomediada" and st.session_state.get("dx_imuno_choices"):
-    dx_summary_parts.append("Subtipos: " + ", ".join(st.session_state["dx_imuno_choices"]))
+        if dx_imuno_choice == "outros":
+            st.text_input(
+                "Especifique (outros)",
+                key="dx_imuno_outro",
+                placeholder="Ex.: anti-MAG, AMAN/AMSAN, paraneoplásica, etc.",
+            )
 
-st.caption(" | ".join(dx_summary_parts))
+# Optional: compact auto-summary (safe)
+summary = dx_categoria
+if dx_categoria == "Neuropatia genética":
+    choice = st.session_state.get("dx_genetica_choice", "")
+    if choice == "outro":
+        extra = st.session_state.get("dx_genetica_outro", "").strip()
+        if extra:
+            summary += f" | Gene: {extra}"
+        else:
+            summary += " | Gene: outro (não especificado)"
+    elif choice:
+        summary += f" | Gene: {choice}"
 
-# -----------------------------
-# 7) Conduta
-# -----------------------------
-st.subheader("Conduta:")
-_ = text_area_lines(
-    label="",
-    lines=4,
-    key="conduta",
-    placeholder="Conduta diagnóstica e terapêutica",
-)
+if dx_categoria == "Neuropatia imunomediada":
+    choice = st.session_state.get("dx_imuno_choice", "")
+    if choice == "outros":
+        extra = st.session_state.get("dx_imuno_outro", "").strip()
+        if extra:
+            summary += f" | Subtipo: {extra}"
+        else:
+            summary += " | Subtipo: outros (não especificado)"
+    elif choice:
+        summary += f" | Subtipo: {choice}"
+
+st.caption(summary)
 
 
