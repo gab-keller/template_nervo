@@ -181,7 +181,7 @@ with c_input:
 st.markdown("**História da doença atual:**")
 _ = text_area_lines(
     label="",
-    lines=6,
+    lines=10,
     key="hda",
     placeholder="",
 )
@@ -194,7 +194,7 @@ st.subheader("Antecedentes")
 st.markdown("**Antecedentes pessoais:**")
 _ = text_area_lines(
     label="",
-    lines=4,
+    lines=6,
     key="antecedentes_pessoais",
     placeholder=(
         "Descrever cardiopatias, distúrbios do sono, catarata, neoplasias, distúrbios respiratórios, "
@@ -215,7 +215,7 @@ _ = text_area_lines(
 st.markdown("**Medicações em uso:**")
 _ = text_area_lines(
     label="",
-    lines=3,
+    lines=6,
     key="meds_em_uso",
     placeholder="",
 )
@@ -223,7 +223,7 @@ _ = text_area_lines(
 st.markdown("**Medicações de uso prévio e motivo da suspensão:**")
 _ = text_area_lines(
     label="",
-    lines=3,
+    lines=1,
     key="meds_previas",
     placeholder="",
 )
@@ -877,21 +877,21 @@ def build_export_text(include_all: bool) -> str:
         # Anamnese
         anam_lines = []
         if _get("Id"):
-            anam_lines.append("Identificação:\n" + _get("Id"))
+            anam_lines.append("# Identificação:\n" + _get("Id"))
         if _get("idade_inicio"):
             anam_lines.append("Idade de início: " + _get("idade_inicio"))
         if _get("hda"):
-            anam_lines.append("História da doença atual:\n" + _get("hda"))
+            anam_lines.append("# HMA:\n" + _get("hda"))
         parts.append(_section("ANAMNESE", "\n\n".join([x for x in anam_lines if x.strip()])))
 
         # Antecedentes
         ant_lines = []
         if _get("antecedentes_pessoais"):
-            ant_lines.append("Antecedentes pessoais:\n" + _get("antecedentes_pessoais"))
+            ant_lines.append("# Antecedentes pessoais:\n" + _get("antecedentes_pessoais"))
         if _get("antecedentes_familiares"):
-            ant_lines.append("História familiar:\n" + _get("antecedentes_familiares"))
+            ant_lines.append("# História familiar:\n" + _get("antecedentes_familiares"))
         if _get("meds_em_uso"):
-            ant_lines.append("Medicações em uso:\n" + _get("meds_em_uso"))
+            ant_lines.append("# Medicações em uso:\n" + _get("meds_em_uso"))
         if _get("meds_previas"):
             ant_lines.append("Medicações prévias / motivo da suspensão:\n" + _get("meds_previas"))
         parts.append(_section("ANTECEDENTES", "\n\n".join([x for x in ant_lines if x.strip()])))
@@ -931,7 +931,7 @@ def build_export_text(include_all: bool) -> str:
     func_block = _get("func_resumo")
     if not func_block:
         func_block = _safe_call(build_func_summary, "")
-    parts.append(_section("AVALIAÇÃO FUNCIONAL", func_block))
+    parts.append(_section(">> Avaliação funcional:", func_block))
 
     # -----------------------------
     # 4) SEGUIMENTO MULTIDISCIPLINAR (always)
@@ -954,7 +954,7 @@ def build_export_text(include_all: bool) -> str:
     if outras:
         multi_lines.append("Outras:\n" + outras)
 
-    parts.append(_section("SEGUIMENTO MULTIDISCIPLINAR", "\n".join([x for x in multi_lines if x.strip()])))
+    parts.append(_section(">> Seguimento multidisciplinar", "\n".join([x for x in multi_lines if x.strip()])))
 
     # -----------------------------
     # 5) EXAME FÍSICO (major group in export)
@@ -963,14 +963,14 @@ def build_export_text(include_all: bool) -> str:
 
     neuro_geral = _get("neuro_geral")
     if neuro_geral:
-        exf_lines.append("Neurológico geral:\n" + neuro_geral)
+        exf_lines.append("# Exame Neurológico:\n" + neuro_geral)
 
     # força: prefer saved summary, else compute from current fields
     forca = _get("forca_resumo")
     if not forca:
         forca = _safe_call(build_forca_summary, "")
     if forca:
-        exf_lines.append("Força motora (resumo):\n" + forca)
+        exf_lines.append("Força motora:\n" + forca)
 
     nm = _get("exame_neuromuscular_especifico")
     if nm:
@@ -1038,7 +1038,7 @@ def build_export_text(include_all: bool) -> str:
                 det.append("Local: " + _get("tg_local"))
             if det:
                 tg_lines.append("Detalhes: " + " | ".join(det))
-    parts.append(_section("TESTE GENÉTICO", "\n".join([x for x in tg_lines if x.strip()])))
+    parts.append(_section(">> Teste genético", "\n".join([x for x in tg_lines if x.strip()])))
 
     # -----------------------------
     # 8) DIAGNÓSTICO (topográfico + nosológico)
