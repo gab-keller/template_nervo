@@ -614,6 +614,7 @@ if st.session_state["forca_open"]:
 
     _force_row_bilateral("Abdução do ombro", "mrc_abd_ombro_D", "mrc_abd_ombro_E")
     _force_row_bilateral("Adução do ombro", "mrc_add_ombro_D", "mrc_add_ombro_E")
+    _force_row_bilateral("Flexores do cotovelo", "mrc_flex_cotovelo_D", "mrc_flex_cotovelo_E")
     _force_row_bilateral("Extensores do cotovelo", "mrc_ext_cotovelo_D", "mrc_ext_cotovelo_E")
     _force_row_bilateral("Extensores de punho", "mrc_ext_punho_D", "mrc_ext_punho_E")
     _force_row_bilateral("Flexores de punho", "mrc_flex_punho_D", "mrc_flex_punho_E")
