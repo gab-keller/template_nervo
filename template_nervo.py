@@ -389,8 +389,11 @@ mrc_keys = [
 if "mrc_ss_total" not in st.session_state:
     st.session_state["mrc_ss_total"] = ""   # stays blank until user calculates
 
-inline_label_display("""Escala MRC-SS 
-(calculada automaticamente, conforme exame físico)""", str(st.session_state["mrc_ss_total"]) if st.session_state["mrc_ss_total"] != "" else "")
+inline_label_display(
+    "Escala MRC-SS<br><span style='font-size:0.85em; color:#666'>(calculada automaticamente, conforme exame físico)</span>",
+    str(st.session_state["mrc_ss_total"]) if st.session_state["mrc_ss_total"] != "" else ""
+)
+
 
 st.markdown("**Outras escalas e métricas de seguimento**")
 _ = text_area_lines(
