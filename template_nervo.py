@@ -409,6 +409,40 @@ if st.session_state["incat_open"]:
             st.session_state["incat_open"] = False
             st.rerun()
 
+# ---- MRC-SS display (right after INCAT) ----
+
+mrc_keys = [
+    "mrc_ombro_D", "mrc_ombro_E",
+    "mrc_cotovelo_D", "mrc_cotovelo_E",
+    "mrc_punho_D", "mrc_punho_E",
+    "mrc_quadril_D", "mrc_quadril_E",
+    "mrc_joelho_D", "mrc_joelho_E",
+    "mrc_tornozelo_D", "mrc_tornozelo_E",
+]
+
+if "mrc_ss_total" not in st.session_state:
+    st.session_state["mrc_ss_total"] = ""  # stays blank until user calculates
+
+
+inline_label_display(
+    "Escala MRC-SS<br>"
+    "<span style='font-size:0.85em; color:#666'>"
+    "(calculada automaticamente, conforme exame físico)"
+    "</span>",
+    str(st.session_state["mrc_ss_total"])
+    if st.session_state["mrc_ss_total"] != ""
+    else ""
+)
+
+
+st.markdown("**Outras escalas e métricas de seguimento**")
+
+_ = text_area_lines(
+    label="",
+    lines=5,
+    key="outras_escalas_seguimento",
+    placeholder="NIS, dinamometria, tempo de marcha, TUG, etc.",
+)
 
 # -----------------------------
 # 6) Exame físico neurológico
