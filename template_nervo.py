@@ -614,31 +614,32 @@ _ = text_area_lines(
 )
 
 # =============================
-# ADD THIS BLOCK AT THE VERY END OF YOUR FILE (after "Conduta:")
+# BUTTONS
 # =============================
 
 def _get(key: str, default: str = "") -> str:
     v = st.session_state.get(key, default)
     if v is None:
         return ""
-    s = str(v).strip()
-    return s
+    return str(v).strip()
 
 def _bool_to_txt(v: bool) -> str:
     return "Sim" if v else "Não"
 
 def _section(title: str, body: str) -> str:
-    body = body.strip()
+    body = (body or "").strip()
     if not body:
         return ""
     return f"{title}\n{body}\n"
 
 def build_export_text(include_all: bool) -> str:
-    # ---- História / antecedentes (only for "histórico completo") ----
     parts = []
+
     if include_all:
-        parts.append(_section("HISTÓRIA CLÍNICA", f"Idade ao início dos sintomas: {_get('idade_inicio_sintomas')}\n{_get('historia_clinica_texto')}"))
+        parts.append(_section("HISTÓRIA CLÍNICA",
+                              f"Idade ao início dos sintomas: {_get('idade_inicio_sintomas')}\n{_get('historia_clinica_texto')}"))
         parts.append(_section("ANTECEDENTES PATOLÓGICOS", _get("antecedentes_patologicos_texto")))
+
         hf = _get("historia_familiar_texto")
         padrao = []
         if st.session_state.get("hf_esporadico"):
@@ -646,12 +647,11 @@ def build_export_text(include_all: bool) -> str:
         if st.session_state.get("hf_familiar"):
             padrao.append("Familiar")
         padrao_txt = ", ".join(padrao) if padrao else ""
-        hf_block = hf
         if padrao_txt:
-            hf_block = (hf_block + "\n" if hf_block else "") + f"Padrão de herança: {padrao_txt}"
-        parts.append(_section("HISTÓRIA FAMILIAR", hf_block))
+            hf = (hf + "\n" if hf else "") + f"Padrão de herança: {padrao_txt}"
+        parts.append(_section("HISTÓRIA FAMILIAR", hf))
 
-    # ---- Medicações modificadoras ----
+    # Medicações
     trat = _get("tratamento_atual_radio")
     trat_line = f"Tratamento atual: {trat}" if trat else ""
     tempo = ""
@@ -666,12 +666,12 @@ def build_export_text(include_all: bool) -> str:
         trat_line,
         "Medicamentos de uso atual ou prévio:\n" + _get("meds_atual_previo_texto") if _get("meds_atual_previo_texto") else "",
         "Outros medicamentos:\n" + _get("outros_meds_texto") if _get("outros_meds_texto") else "",
-        "Paciente transplantado hepático: " + _bool_to_txt(bool(st.session_state.get("paciente_transplantado"))) if "paciente_transplantado" in st.session_state else "",
+        "Paciente transplantado hepático: " + _bool_to_txt(bool(st.session_state.get("paciente_transplantado")))
+        if "paciente_transplantado" in st.session_state else "",
     ] if x.strip()])
-
     parts.append(_section("MEDICAÇÕES MODIFICADORAS DE DOENÇA / IMUNOSSUPRESSORES", meds_block))
 
-    # ---- Evolução clínica ----
+    # Evolução
     controle = _get("controle_atual_radio")
     evo_lines = []
     if controle:
@@ -698,10 +698,9 @@ def build_export_text(include_all: bool) -> str:
 
     parts.append(_section("EVOLUÇÃO CLÍNICA", "\n".join(evo_lines)))
 
-    # ---- Exame físico neurológico ----
+    # Exame físico
     exame_neuro = _get("exame_fisico_neuro_texto")
     mrc_lines = []
-    # pull MRC values if present
     mrc_map = [
         ("Abdução do ombro", "mrc_ombro_D", "mrc_ombro_E"),
         ("Flexão do cotovelo", "mrc_cotovelo_D", "mrc_cotovelo_E"),
@@ -715,12 +714,8 @@ def build_export_text(include_all: bool) -> str:
         ve = _get(ke)
         if vd or ve:
             mrc_lines.append(f"{label}: D {vd or '-'} / E {ve or '-'}")
-    if mrc_lines:
-        mrc_block = "MRC:\n" + "\n".join(mrc_lines)
-    else:
-        mrc_block = ""
+    mrc_block = "MRC:\n" + "\n".join(mrc_lines) if mrc_lines else ""
 
-    # deformidades key was mentioned earlier in the conversation, but not present in the pasted code
     deform = _get("deformidades_osteo_texto")
 
     exame_block_parts = []
@@ -733,7 +728,7 @@ def build_export_text(include_all: bool) -> str:
 
     parts.append(_section("EXAME FÍSICO NEUROLÓGICO", "\n\n".join(exame_block_parts)))
 
-    # ---- Exames complementares ----
+    # Exames complementares
     exames_lines = []
     if _get("exames_enmg"):
         exames_lines.append("ENMG: " + _get("exames_enmg"))
@@ -747,10 +742,10 @@ def build_export_text(include_all: bool) -> str:
         exames_lines.append("Demais exames: " + _get("exames_demais"))
     parts.append(_section("EXAMES COMPLEMENTARES", "\n".join(exames_lines)))
 
-    # ---- Impressão e discussão ----
+    # Impressão e discussão
     parts.append(_section("IMPRESSÃO E DISCUSSÃO", _get("impressao_discussao")))
 
-    # ---- Diagnóstico / hipótese ----
+    # Diagnóstico
     dx = _get("radio_dx_categoria")
     dx_lines = []
     if dx:
@@ -772,28 +767,47 @@ def build_export_text(include_all: bool) -> str:
 
     parts.append(_section("DIAGNÓSTICO / HIPÓTESE DIAGNÓSTICA", "\n".join(dx_lines)))
 
-    # ---- Conduta ----
+    # Conduta
     parts.append(_section("CONDUTA", _get("conduta")))
 
-    # Final cleanup: remove empty sections and add separators
     cleaned = [p for p in parts if p.strip()]
     return "\n".join(cleaned).strip() + "\n"
 
 
+# --- UI: choose export mode (switchable) ---
 st.divider()
 st.subheader("Exportação (copiar e colar no Notepad)")
 
-c_exp1, c_exp2 = st.columns([1.2, 1.6], vertical_alignment="center")
+if "export_mode" not in st.session_state:
+    st.session_state["export_mode"] = None  # "evolucao" | "completo" | None
+
+c_exp1, c_exp2, c_exp3 = st.columns([1.2, 1.8, 1.2], vertical_alignment="center")
 with c_exp1:
     if st.button("Exportar evolução", key="btn_export_evolucao"):
-        st.session_state["export_text"] = build_export_text(include_all=False)
-
+        st.session_state["export_mode"] = "evolucao"
 with c_exp2:
     if st.button("Exportar histórico completo", key="btn_export_completo"):
-        st.session_state["export_text"] = build_export_text(include_all=True)
+        st.session_state["export_mode"] = "completo"
+with c_exp3:
+    if st.button("Limpar exportação", key="btn_clear_export"):
+        st.session_state["export_mode"] = None
+        st.session_state["export_text"] = ""
+        st.rerun()
 
-export_text = st.session_state.get("export_text", "")
+# Always recompute based on the currently selected mode (so user can change their mind)
+mode = st.session_state.get("export_mode")
 
+if mode == "evolucao":
+    export_text = build_export_text(include_all=False)
+    st.session_state["export_text"] = export_text
+elif mode == "completo":
+    export_text = build_export_text(include_all=True)
+    st.session_state["export_text"] = export_text
+else:
+    export_text = ""
+
+# Show the text area only when a mode is selected,
+# but keep the buttons visible so the user can switch anytime.
 if export_text:
     st.text_area(
         "Texto para copiar (Ctrl+A, Ctrl+C)",
