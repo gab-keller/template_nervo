@@ -194,7 +194,7 @@ st.markdown("**História familiar:**")
 _ = text_area_lines(
     label="",
     lines=4,
-    key="antecedentes_pessoais",
+    key="antecedentes_familiares",
     placeholder=(
         "Familiares acometidos / estado de saúde de pais, irmãos e filhos / cidade de origem dos pais / consanguinidade / etc."
     ),
