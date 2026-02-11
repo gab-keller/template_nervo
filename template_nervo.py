@@ -45,7 +45,7 @@ def inline_label_input(label_text: str, key: str, placeholder: str = ""):
 
 
 # -----------------------------
-# INCAT selector (NO st.dialog) - works on older Streamlit
+# INCAT selector (no st.dialog) - with UNIQUE KEYS
 # -----------------------------
 
 # state init
@@ -61,14 +61,14 @@ if "incat_total" not in st.session_state:
 c_incat_btn, c_incat_box, _f = st.columns([1.6, 3.0, 10.0], vertical_alignment="center")
 
 with c_incat_btn:
-    if st.button("Selecionar Escala INCAT"):
+    if st.button("Selecionar Escala INCAT", key="btn_open_incat"):
         st.session_state["incat_open"] = True
 
 with c_incat_box:
     st.text_input(
         "Escala INCAT (UL + LL)",
         value=str(st.session_state["incat_total"]) if st.session_state["incat_total"] != "" else "",
-        key="incat_total_display",
+        key="incat_total_display",   # must be unique in the whole app
         disabled=True,
     )
 
@@ -90,12 +90,16 @@ if st.session_state["incat_open"]:
         5: "5 – Incapacidade de usar qualquer braço para qualquer movimento com finalidade.",
     }
 
+    # Ensure the current state is valid
+    if st.session_state["incat_ul"] not in ul_options:
+        st.session_state["incat_ul"] = 0
+
     st.session_state["incat_ul"] = st.radio(
         "Selecione UMA opção (MMSS)",
         options=list(ul_options.keys()),
         format_func=lambda k: ul_options[k],
         index=list(ul_options.keys()).index(st.session_state["incat_ul"]),
-        key="incat_ul_radio",
+        key="radio_incat_ul",  # unique
     )
 
     st.markdown("---")
@@ -109,12 +113,15 @@ if st.session_state["incat_open"]:
         5: "5 – Restrito à cadeira de rodas, incapaz de ficar em pé ou andar, ou apenas alguns passos mesmo com ajuda.",
     }
 
+    if st.session_state["incat_ll"] not in ll_options:
+        st.session_state["incat_ll"] = 0
+
     st.session_state["incat_ll"] = st.radio(
         "Selecione UMA opção (MMII)",
         options=list(ll_options.keys()),
         format_func=lambda k: ll_options[k],
         index=list(ll_options.keys()).index(st.session_state["incat_ll"]),
-        key="incat_ll_radio",
+        key="radio_incat_ll",  # unique
     )
 
     total = int(st.session_state["incat_ul"]) + int(st.session_state["incat_ll"])
@@ -122,14 +129,15 @@ if st.session_state["incat_open"]:
 
     b1, b2, _bfill = st.columns([1, 1, 10.0])
     with b1:
-        if st.button("Salvar INCAT", type="primary"):
+        if st.button("Salvar INCAT", key="btn_save_incat", type="primary"):
             st.session_state["incat_total"] = total
             st.session_state["incat_open"] = False
             st.rerun()
     with b2:
-        if st.button("Cancelar"):
+        if st.button("Cancelar", key="btn_cancel_incat"):
             st.session_state["incat_open"] = False
             st.rerun()
+
 
 
 # -----------------------------
