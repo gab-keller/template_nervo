@@ -328,14 +328,12 @@ with c_right:
         "Escala INCAT (MMSS + MMII)",
         value=st.session_state.get("incat_total") or "Calculada automaticamente",
         disabled=True,
-        key="display_incat_total",
     )
 
     st.text_input(
         "Escala PND",
         value=st.session_state.get("pnd_total") or "Calculada automaticamente",
         disabled=True,
-        key="display_pnd_total",
     )
 
     # PND display (below)
@@ -431,25 +429,19 @@ if st.session_state["incat_open"]:
     st.markdown(f"**PND: {pnd}**")
     
 b1, b2, _bfill = st.columns([1.4, 1.0, 10.0])
+
 with b1:
     if st.button("Salvar INCAT/PND", key="btn_save_incat", type="primary"):
-        incat_str = f"MMSS ({ul}) + MMII ({ll}) = {total}"
-        pnd_str = pnd
-
-        # store the real values
-        st.session_state["incat_total"] = incat_str
-        st.session_state["pnd_total"] = pnd_str
-
-        # IMPORTANT: also store into the display widget state (because those text_inputs have keys)
-        st.session_state["display_incat_total"] = incat_str
-        st.session_state["display_pnd_total"] = pnd_str
-
+        st.session_state["incat_total"] = f"MMSS ({ul}) + MMII ({ll}) = {total}"
+        st.session_state["pnd_total"] = pnd
         st.session_state["incat_open"] = False
         st.rerun()
+
 with b2:
     if st.button("Cancelar", key="btn_cancel_incat"):
         st.session_state["incat_open"] = False
         st.rerun()
+
 
 st.markdown("**Outras escalas e métricas de seguimento**")
 
