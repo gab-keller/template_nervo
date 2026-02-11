@@ -172,7 +172,7 @@ if "incat_total" not in st.session_state:
 c_incat_btn, c_incat_box, _f = st.columns([1.6, 3.0, 10.0], vertical_alignment="center")
 
 with c_incat_btn:
-    if st.button("Selecionar Escala INCAT", key="btn_open_incat"):
+    if st.button("Escala INCAT", key="btn_open_incat"):
         st.session_state["incat_open"] = True
 
 with c_incat_box:
@@ -206,7 +206,6 @@ if st.session_state["incat_open"]:
         st.session_state["incat_ul"] = 0
 
     st.session_state["incat_ul"] = st.radio(
-        "Selecione UMA opção (MMSS)",
         options=list(ul_options.keys()),
         format_func=lambda k: ul_options[k],
         index=list(ul_options.keys()).index(st.session_state["incat_ul"]),
@@ -228,7 +227,6 @@ if st.session_state["incat_open"]:
         st.session_state["incat_ll"] = 0
 
     st.session_state["incat_ll"] = st.radio(
-        "Selecione UMA opção (MMII)",
         options=list(ll_options.keys()),
         format_func=lambda k: ll_options[k],
         index=list(ll_options.keys()).index(st.session_state["incat_ll"]),
