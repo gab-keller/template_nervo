@@ -1,7 +1,14 @@
 # streamlit_app.py
 import streamlit as st
 
-st.set_page_config( page_title="TEMPLATE NERVO PERIFÉRICO CONSULTA INICIAL E RETORNO", layout="wide", )
+st.title("Template nervo periférico")
+
+st.markdown(
+    "<div style='font-size:16px; color:#666; margin-top:-0.5rem; margin-bottom:1rem;'>"
+    "Consulta inicial e de retorno"
+    "</div>",
+    unsafe_allow_html=True,
+)
 
 # --- CSS: small controlled gutter + prevent label overflow into input ---
 st.markdown(
