@@ -358,7 +358,7 @@ def build_func_summary() -> str:
         ort.append(f"Outros: {ort_outros}")
 
     if ort:
-        parts.append("Órteses/CR: " + "; ".join(ort))
+        parts.append("Órteses/Cadeira de rodas: " + "; ".join(ort))
 
     # -------------------------
     # 3) Ventilação (optional)
@@ -858,23 +858,43 @@ st.subheader("Conduta")
 _ = text_area_lines("", 4, "conduta", placeholder="")
 
 # =========================================================
-# EXPORT (same structure as reference)
+# EXPORT (updated: order + structure aligned to current UI)
 # =========================================================
-def build_export_text(include_all: bool) -> str:
-    parts = []
+def _safe_call(fn, fallback: str = "") -> str:
+    try:
+        v = fn()
+        return (v or "").strip()
+    except Exception:
+        return fallback
 
+def build_export_text(include_all: bool) -> str:
+    parts: list[str] = []
+
+    # -----------------------------
+    # 1) ANAMNESE / ANTECEDENTES / DNPM (only in full export)
+    # -----------------------------
     if include_all:
         # Anamnese
-        parts.append(_section("ANAMNESE",
-                              f"Idade de início: {_get('idade_inicio')}\n"
-                              f"História da doença atual:\n{_get('hda')}\n\n"
-                              f"Evolução:\n{_get('evolucao')}"))
+        anam_lines = []
+        if _get("Id"):
+            anam_lines.append("Identificação:\n" + _get("Id"))
+        if _get("idade_inicio"):
+            anam_lines.append("Idade de início: " + _get("idade_inicio"))
+        if _get("hda"):
+            anam_lines.append("História da doença atual:\n" + _get("hda"))
+        parts.append(_section("ANAMNESE", "\n\n".join([x for x in anam_lines if x.strip()])))
 
         # Antecedentes
-        parts.append(_section("ANTECEDENTES",
-                              f"Antecedentes pessoais:\n{_get('antecedentes_pessoais')}\n\n"
-                              f"Medicações em uso:\n{_get('meds_em_uso')}\n\n"
-                              f"Medicações prévias / motivo suspensão:\n{_get('meds_previas')}"))
+        ant_lines = []
+        if _get("antecedentes_pessoais"):
+            ant_lines.append("Antecedentes pessoais:\n" + _get("antecedentes_pessoais"))
+        if _get("antecedentes_familiares"):
+            ant_lines.append("História familiar:\n" + _get("antecedentes_familiares"))
+        if _get("meds_em_uso"):
+            ant_lines.append("Medicações em uso:\n" + _get("meds_em_uso"))
+        if _get("meds_previas"):
+            ant_lines.append("Medicações prévias / motivo da suspensão:\n" + _get("meds_previas"))
+        parts.append(_section("ANTECEDENTES", "\n\n".join([x for x in ant_lines if x.strip()])))
 
         # DNPM
         dnpm_radio = _get("dnpm_radio")
@@ -899,121 +919,137 @@ def build_export_text(include_all: bool) -> str:
                 dnpm_block = (dnpm_block + "\n" if dnpm_block else "") + "Marcos:\n" + "\n".join(milestones)
         parts.append(_section("DESENVOLVIMENTO NEUROPSICOMOTOR", dnpm_block))
 
-    # Neurológico
-    neuro_parts = []
-    if _get("neuro_geral"):
-        neuro_parts.append(_get("neuro_geral"))
-    if _get("forca_resumo"):
-        neuro_parts.append(_get("forca_resumo"))
-    parts.append(_section("NEUROLÓGICO", "\n\n".join([p for p in neuro_parts if p.strip()])))
+    # -----------------------------
+    # 2) EVOLUÇÃO CLÍNICA (always)
+    # -----------------------------
+    parts.append(_section("EVOLUÇÃO CLÍNICA", _get("evolucao")))
 
-    # Exame NM específico
-    parts.append(_section("EXAME NEUROMUSCULAR ESPECÍFICO", _get("exame_neuromuscular_especifico")))
-
-    # Pele / Geral
-    parts.append(_section("PELE E EXAME CLÍNICO GERAL", _get("pele_clinico_geral")))
-
-    # Osteo/dismorfismos
-    parts.append(_section("OSTEOESQUELÉTICAS / DISMORFISMOS", _get("osteo_dismorfismos")))
-
-    # Funcional + multidisciplinar + órteses + ventilação
+    # -----------------------------
+    # 3) AVALIAÇÃO FUNCIONAL (always)
+    # - Prefer saved func_resumo, otherwise compute from current selections
+    # -----------------------------
     func_block = _get("func_resumo")
+    if not func_block:
+        func_block = _safe_call(build_func_summary, "")
     parts.append(_section("AVALIAÇÃO FUNCIONAL", func_block))
 
-    # Multidisciplinar
+    # -----------------------------
+    # 4) SEGUIMENTO MULTIDISCIPLINAR (always)
+    # -----------------------------
     multi_lines = []
-    def add_freq(name, chk, freq):
+
+    def add_freq(name: str, chk: str, freq: str):
         if st.session_state.get(chk):
             f = _get(freq)
             multi_lines.append(f"{name}: {f + 'x/sem' if f else '(freq. não informada)'}")
+
     add_freq("Fisioterapia motora", "fisio_motora_chk", "fisio_motora_freq")
     add_freq("Fisioterapia respiratória", "fisio_resp_chk", "fisio_resp_freq")
     add_freq("Ambú / máscara facial", "ambu_chk", "ambu_freq")
     add_freq("Fonoterapia", "fono_chk", "fono_freq")
     add_freq("Terapia ocupacional", "to_chk", "to_freq")
     add_freq("Psicoterapia", "psico_chk", "psico_freq")
+
     outras = _get("outras_terapias")
     if outras:
         multi_lines.append("Outras:\n" + outras)
-    parts.append(_section("SEGUIMENTO MULTIDISCIPLINAR", "\n".join(multi_lines)))
 
-    # Órteses
-    ort_lines = []
-    for lbl, k in [
-        ("Não usa", "ortese_nao_usa"),
-        ("Órteses MMII", "ortese_mi"),
-        ("Cadeira de rodas", "cadeira_rodas"),
-        ("Órteses MMSS", "ortese_ms"),
-        ("Colete ortopédico", "colete_ortopedico"),
-    ]:
-        if st.session_state.get(k):
-            ort_lines.append(lbl)
-    ort_outros = _get("ortese_outros")
-    if ort_outros:
-        ort_lines.append(f"Outros: {ort_outros}")
-    parts.append(_section("ÓRTESES / CADEIRA DE RODAS", "; ".join(ort_lines)))
+    parts.append(_section("SEGUIMENTO MULTIDISCIPLINAR", "\n".join([x for x in multi_lines if x.strip()])))
 
-    # Ventilação
-    vent_line = _get("vent_radio")
-    vent_info = _get("vent_info_adicional")
-    vent_block = ""
-    if vent_line:
-        vent_block += vent_line
-    if vent_info:
-        vent_block += ("\n" if vent_block else "") + vent_info
-    parts.append(_section("SUPORTE VENTILATÓRIO", vent_block))
+    # -----------------------------
+    # 5) EXAME FÍSICO (major group in export)
+    # -----------------------------
+    exf_lines = []
 
-    # Exames
+    neuro_geral = _get("neuro_geral")
+    if neuro_geral:
+        exf_lines.append("Neurológico geral:\n" + neuro_geral)
+
+    # força: prefer saved summary, else compute from current fields
+    forca = _get("forca_resumo")
+    if not forca:
+        forca = _safe_call(build_forca_summary, "")
+    if forca:
+        exf_lines.append("Força motora (resumo):\n" + forca)
+
+    nm = _get("exame_neuromuscular_especifico")
+    if nm:
+        exf_lines.append("Exame neuromuscular específico:\n" + nm)
+
+    pele = _get("pele_clinico_geral")
+    if pele:
+        exf_lines.append("Alterações de pele e exame clínico geral:\n" + pele)
+
+    osteo = _get("osteo_dismorfismos")
+    if osteo:
+        exf_lines.append("Alterações osteoesqueléticas e dismorfismos:\n" + osteo)
+
+    parts.append(_section("EXAME FÍSICO", "\n\n".join([x for x in exf_lines if x.strip()])))
+
+    # -----------------------------
+    # 6) EXAMES COMPLEMENTARES
+    # -----------------------------
     ex_lines = []
     if _get("ex_cpk"):
         ex_lines.append(f"CPK: {_get('ex_cpk')}")
     if _get("ex_enmg"):
-        ex_lines.append("ENMG:\n" + _get("ex_enmg"))
+        ex_lines.append("Eletroneuromiografia:\n" + _get("ex_enmg"))
     if _get("ex_decremento_jitter"):
-        ex_lines.append(f"Decremento/Jitter: {_get('ex_decremento_jitter')}")
+        ex_lines.append(f"Decremento / Jitter na EMG: {_get('ex_decremento_jitter')}")
     if _get("ex_achr"):
-        ex_lines.append(f"Anti-AChR: {_get('ex_achr')}")
+        ex_lines.append(f"Anti-receptor de acetilcolina: {_get('ex_achr')}")
     if _get("ex_outros_juncao"):
-        ex_lines.append(f"Outros anticorpos junção: {_get('ex_outros_juncao')}")
+        ex_lines.append(f"Outros anticorpos de junção: {_get('ex_outros_juncao')}")
     if _get("ex_miosites"):
-        ex_lines.append(f"Anticorpos miosites: {_get('ex_miosites')}")
+        ex_lines.append(f"Anticorpos para miosites: {_get('ex_miosites')}")
     if _get("ex_rm_muscular"):
         ex_lines.append("RM muscular:\n" + _get("ex_rm_muscular"))
     if _get("ex_biopsia_muscular"):
         ex_lines.append("Biópsia muscular:\n" + _get("ex_biopsia_muscular"))
+
     for lbl, k in [
         ("ECO", "ex_eco"),
         ("Holter", "ex_holter"),
         ("Espirometria", "ex_espirometria"),
         ("Polissonografia", "ex_polissonografia"),
-        ("Outros", "ex_outros"),
+        ("Outros exames", "ex_outros"),
     ]:
         if _get(k):
             ex_lines.append(f"{lbl}:\n{_get(k)}")
-    parts.append(_section("EXAMES COMPLEMENTARES", "\n\n".join(ex_lines)))
 
-    # Dx topográfico + genético + nosológico
+    parts.append(_section("EXAMES COMPLEMENTARES", "\n\n".join([x for x in ex_lines if x.strip()])))
+
+    # -----------------------------
+    # 7) TESTE GENÉTICO (separate section, mirrors UI)
+    # -----------------------------
+    tg_radio = _get("tg_radio")
+    tg_lines = []
+    if tg_radio:
+        tg_lines.append(tg_radio)
+        if tg_radio == "Teste genético realizado":
+            if _get("tg_gene_sel"):
+                tg_lines.append("Gene/resultado: " + _get("tg_gene_sel"))
+            det = []
+            if _get("tg_exame_nome"):
+                det.append("Exame: " + _get("tg_exame_nome"))
+            if _get("tg_data"):
+                det.append("Data: " + _get("tg_data"))
+            if _get("tg_local"):
+                det.append("Local: " + _get("tg_local"))
+            if det:
+                tg_lines.append("Detalhes: " + " | ".join(det))
+    parts.append(_section("TESTE GENÉTICO", "\n".join([x for x in tg_lines if x.strip()])))
+
+    # -----------------------------
+    # 8) DIAGNÓSTICO (topográfico + nosológico)
+    # -----------------------------
     dx_lines = []
+
     topo_txt = _get("dx_topografico")
     if topo_txt:
         if topo_txt == "Outro":
             topo_txt = _get("dx_topografico_outro") or "Outro (não especificado)"
         dx_lines.append(f"Topográfico: {topo_txt}")
-
-    tg_radio = _get("tg_radio")
-    if tg_radio:
-        dx_lines.append(f"Teste genético: {tg_radio}")
-        if tg_radio == "Teste genético realizado":
-            dx_lines.append(f"Gene/resultado: {_get('tg_gene_sel')}")
-            det = []
-            if _get("tg_exame_nome"):
-                det.append(f"Exame: {_get('tg_exame_nome')}")
-            if _get("tg_data"):
-                det.append(f"Data: {_get('tg_data')}")
-            if _get("tg_local"):
-                det.append(f"Local: {_get('tg_local')}")
-            if det:
-                dx_lines.append("Detalhes: " + " | ".join(det))
 
     noso = _get("dx_noso_sel")
     if noso:
@@ -1021,14 +1057,17 @@ def build_export_text(include_all: bool) -> str:
             noso = _get("dx_noso_outros") or "Outros (não especificado)"
         dx_lines.append(f"Nosológico: {noso}")
 
-    parts.append(_section("DIAGNÓSTICO", "\n".join(dx_lines)))
+    parts.append(_section("DIAGNÓSTICO", "\n".join([x for x in dx_lines if x.strip()])))
 
-    # Impressão + Conduta
+    # -----------------------------
+    # 9) IMPRESSÃO + CONDUTA
+    # -----------------------------
     parts.append(_section("IMPRESSÃO", _get("impressao")))
     parts.append(_section("CONDUTA", _get("conduta")))
 
     cleaned = [p for p in parts if p.strip()]
     return "\n".join(cleaned).strip() + "\n"
+
 
 # --- UI export ---
 st.divider()
@@ -1067,7 +1106,7 @@ if export_text:
     st.text_area(
         "Texto para copiar (Ctrl+A, Ctrl+C)",
         value=export_text,
-        height=320,
+        height=380,
         key="export_text_area",
     )
     st.download_button(
