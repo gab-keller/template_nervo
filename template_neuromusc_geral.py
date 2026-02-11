@@ -174,14 +174,6 @@ _ = text_area_lines(
     placeholder="Descreva a história da doença atual",
 )
 
-st.markdown("**Evolução:**")
-_ = text_area_lines(
-    label="",
-    lines=5,
-    key="evolucao",
-    placeholder="Descreva a evolução clínica (progressão, flutuação, gatilhos, internações, etc.)",
-)
-
 # =========================================================
 # 2) ANTECEDENTES
 # =========================================================
@@ -246,230 +238,16 @@ if dnpm == "Atraso desenvolvimento":
         inline_label_input_dnpm("Controle esfincteriano (meses)", key="dnpm_controle_esfincteriano_meses", placeholder="Ex.: 30")
 
 # =========================================================
-# 4) NEUROLÓGICO GERAL + EXAME DE FORÇA (panel)
+# 4) EVOLUÇÃO (panel)
 # =========================================================
-st.subheader("Neurológico geral")
 
+st.subheader("Evolução clínica")
+st.markdown("**Descrição da evolução:**")
 _ = text_area_lines(
     label="",
     lines=5,
-    key="neuro_geral",
-    placeholder=(
-        "Descrever cognição, força, reflexos osteotendinosos, reflexos patológicos (cutâneo plantar, axiais da face), "
-        "tônus, sensibilidade, coordenação, marcha, nervos cranianos"
-    ),
-)
-
-# --- aligned area: button left, summary right (like INCAT/PND area) ---
-c_left, c_right = st.columns([2.2, 9.8], vertical_alignment="top")
-
-with c_left:
-    if st.button("Exame de força", key="btn_open_forca"):
-        st.session_state["forca_open"] = True
-
-with c_right:
-    display_forca = st.session_state.get("forca_resumo", "").strip()
-    if not display_forca:
-        display_forca = "Gerado automaticamente ao preencher o exame de força"
-    st.text_area(
-        "Força motora (resumo)",
-        value=display_forca,
-        height=120,   # ~4–5 lines
-        disabled=True,
-    )
-
-
-# --------------------------
-# FORCE PANEL
-# --------------------------
-def _force_row_bilateral(label: str, key_d: str, key_e: str):
-    c0, c1, c2, _fill = st.columns([3.2, 1.4, 1.4, 10.0], vertical_alignment="center")
-    with c0:
-        st.markdown(f'<div class="inline-label">{label}</div>', unsafe_allow_html=True)
-    with c1:
-        small_mrc_box(key_d)
-    with c2:
-        small_mrc_box(key_e)
-
-def _force_row_single(label: str, key: str, placeholder: str = "0-5"):
-    c0, c1, _fill = st.columns([3.2, 3.0, 10.0], vertical_alignment="center")
-    with c0:
-        st.markdown(f'<div class="inline-label">{label}</div>', unsafe_allow_html=True)
-    with c1:
-        st.text_input("", key=key, placeholder=placeholder, label_visibility="collapsed", max_chars=1)
-
-
-def build_forca_summary() -> str:
-    """
-    Summarize only filled items.
-    """
-    lines: list[str] = []
-
-    def add_single(lbl: str, k: str):
-        v = _get(k)
-        if v != "":
-            lines.append(f"{lbl}: {v}")
-
-    def add_bilat(lbl: str, kd: str, ke: str):
-        vd = _get(kd)
-        ve = _get(ke)
-        if vd != "" or ve != "":
-            lines.append(f"{lbl}: D {vd or '-'} / E {ve or '-'}")
-
-    # Axial
-    axial = []
-    v_ext_tronco = _get("mrc_ext_tronco")
-    if v_ext_tronco:
-        axial.append(f"Extensores do tronco {v_ext_tronco}")
-    v_flex_pescoco = _get("mrc_flex_pescoco")
-    if v_flex_pescoco:
-        axial.append(f"Flexores do pescoço {v_flex_pescoco}")
-    v_flex_tronco = _get("mrc_flex_tronco")
-    if v_flex_tronco:
-        axial.append(f"Flexores do tronco {v_flex_tronco}")
-    
-
-
-    if axial:
-        lines.append("Axiais: " + " | ".join(axial))
-
-    # Upper
-    add_bilat("Abdução do ombro", "mrc_abd_ombro_D", "mrc_abd_ombro_E")
-    add_bilat("Adução do ombro", "mrc_add_ombro_D", "mrc_add_ombro_E")
-    add_bilat("Extensores do cotovelo", "mrc_ext_cotovelo_D", "mrc_ext_cotovelo_E")
-    add_bilat("Extensores de punho", "mrc_ext_punho_D", "mrc_ext_punho_E")
-    add_bilat("Flexores de punho", "mrc_flex_punho_D", "mrc_flex_punho_E")
-    add_bilat("Extensores de dedos", "mrc_ext_dedos_D", "mrc_ext_dedos_E")
-    add_bilat("Flexores profundos dos dedos", "mrc_fpd_D", "mrc_fpd_E")
-    add_bilat("Abdução dos dedos", "mrc_abd_dedos_D", "mrc_abd_dedos_E")
-    add_bilat("Oponência do polegar", "mrc_op_polegar_D", "mrc_op_polegar_E")
-    add_bilat("Oponência do dedo mínimo", "mrc_op_minimo_D", "mrc_op_minimo_E")
-
-    # Lower
-    add_bilat("Flexores de quadril", "mrc_flex_quadril_D", "mrc_flex_quadril_E")
-    add_bilat("Extensores do quadril", "mrc_ext_quadril_D", "mrc_ext_quadril_E")
-    add_bilat("Abdutores do quadril", "mrc_abd_quadril_D", "mrc_abd_quadril_E")
-    add_bilat("Adutores do quadril", "mrc_add_quadril_D", "mrc_add_quadril_E")
-    add_bilat("Flexores do joelho", "mrc_flex_joelho_D", "mrc_flex_joelho_E")
-    add_bilat("Extensores do joelho", "mrc_ext_joelho_D", "mrc_ext_joelho_E")
-    add_bilat("Dorsiflexão do pé", "mrc_df_pe_D", "mrc_df_pe_E")
-    add_bilat("Flexão do pé", "mrc_pf_pe_D", "mrc_pf_pe_E")
-    add_bilat("Eversores do pé", "mrc_ev_pe_D", "mrc_ev_pe_E")
-    add_bilat("Inversores do pé", "mrc_inv_pe_D", "mrc_inv_pe_E")
-    add_bilat("Extensores do hálux", "mrc_ext_halux_D", "mrc_ext_halux_E")
-    add_bilat("Flexores do hálux", "mrc_flex_halux_D", "mrc_flex_halux_E")
-
-    if not lines:
-        return ""
-    return "Força (MRC): " + " | ".join(lines)
-
-if st.session_state["forca_open"]:
-    st.markdown("#### Força motora (escala MRC)")
-
-    st.markdown("**Músculos axiais:**")
-    _force_row_single("Extensores do tronco", "mrc_ext_tronco", placeholder="0-5")
-    _force_row_single("Flexores do pescoço", "mrc_flex_pescoco", placeholder="0-5")
-    _force_row_single("Flexores do tronco", "mrc_flex_tronco", placeholder="0-5")
-
-    st.markdown("---")
-    st.markdown("**Músculos dos membros superiores:**")
-    # header
-    h0, h1, h2, _hf = st.columns([3.2, 1.4, 1.4, 10.0], vertical_alignment="center")
-    with h0:
-        st.markdown("**Grupo muscular**")
-    with h1:
-        st.markdown("**Direito**")
-    with h2:
-        st.markdown("**Esquerdo**")
-
-    _force_row_bilateral("Abdução do ombro", "mrc_abd_ombro_D", "mrc_abd_ombro_E")
-    _force_row_bilateral("Adução do ombro", "mrc_add_ombro_D", "mrc_add_ombro_E")
-    _force_row_bilateral("Extensores do cotovelo", "mrc_ext_cotovelo_D", "mrc_ext_cotovelo_E")
-    _force_row_bilateral("Extensores de punho", "mrc_ext_punho_D", "mrc_ext_punho_E")
-    _force_row_bilateral("Flexores de punho", "mrc_flex_punho_D", "mrc_flex_punho_E")
-    _force_row_bilateral("Extensores de dedos", "mrc_ext_dedos_D", "mrc_ext_dedos_E")
-    _force_row_bilateral("Flexores profundos dos dedos", "mrc_fpd_D", "mrc_fpd_E")
-    _force_row_bilateral("Abdução dos dedos", "mrc_abd_dedos_D", "mrc_abd_dedos_E")
-    _force_row_bilateral("Oponência do polegar", "mrc_op_polegar_D", "mrc_op_polegar_E")
-    _force_row_bilateral("Oponência do dedo mínimo", "mrc_op_minimo_D", "mrc_op_minimo_E")
-
-    st.markdown("---")
-    st.markdown("**Músculos dos membros inferiores:**")
-    # header
-    h0, h1, h2, _hf = st.columns([3.2, 1.4, 1.4, 10.0], vertical_alignment="center")
-    with h0:
-        st.markdown("**Grupo muscular**")
-    with h1:
-        st.markdown("**Direito**")
-    with h2:
-        st.markdown("**Esquerdo**")
-
-    _force_row_bilateral("Flexores de quadril", "mrc_flex_quadril_D", "mrc_flex_quadril_E")
-    _force_row_bilateral("Extensores do quadril", "mrc_ext_quadril_D", "mrc_ext_quadril_E")
-    _force_row_bilateral("Abdutores do quadril", "mrc_abd_quadril_D", "mrc_abd_quadril_E")
-    _force_row_bilateral("Adutores do quadril", "mrc_add_quadril_D", "mrc_add_quadril_E")
-    _force_row_bilateral("Flexores do joelho", "mrc_flex_joelho_D", "mrc_flex_joelho_E")
-    _force_row_bilateral("Extensores do joelho", "mrc_ext_joelho_D", "mrc_ext_joelho_E")
-    _force_row_bilateral("Dorsiflexão do pé", "mrc_df_pe_D", "mrc_df_pe_E")
-    _force_row_bilateral("Flexão do pé", "mrc_pf_pe_D", "mrc_pf_pe_E")
-    _force_row_bilateral("Eversores do pé", "mrc_ev_pe_D", "mrc_ev_pe_E")
-    _force_row_bilateral("Inversores do pé", "mrc_inv_pe_D", "mrc_inv_pe_E")
-    _force_row_bilateral("Extensores do hálux", "mrc_ext_halux_D", "mrc_ext_halux_E")
-    _force_row_bilateral("Flexores do hálux", "mrc_flex_halux_D", "mrc_flex_halux_E")
-
-    b1, b2, _bfill = st.columns([1.6, 1.2, 10.0], vertical_alignment="center")
-    with b1:
-        if st.button("Salvar exame de força", key="btn_save_forca", type="primary"):
-            st.session_state["forca_resumo"] = build_forca_summary()
-            st.session_state["forca_open"] = False
-            st.rerun()
-    with b2:
-        if st.button("Cancelar", key="btn_cancel_forca"):
-            st.session_state["forca_open"] = False
-            st.rerun()
-
-# =========================================================
-# 5) EXAME NEUROMUSCULAR ESPECÍFICO
-# =========================================================
-st.subheader("Exame neuromuscular específico")
-
-_ = text_area_lines(
-    label="",
-    lines=4,
-    key="exame_neuromuscular_especifico",
-    placeholder=(
-        "Testes de fatigabilidade para miastenia, Simpson, Cogan, sinal da cortina, língua tri-sulcada, "
-        "facilitação do reflexo pós-esforço, lentificação do reflexo pupilar.\n"
-        "Fasciculações, mioquimias, rippling.\n"
-        "Miotonia (língua, membros, percussão)."
-    ),
-)
-
-# =========================================================
-# 6) PELE / EXAME CLÍNICO GERAL
-# =========================================================
-st.subheader("Alterações de pele e exame clínico geral")
-
-_ = text_area_lines(
-    label="",
-    lines=3,
-    key="pele_clinico_geral",
-    placeholder="Alterações da pele (quelóide, hiperqueratose folicular), cardíaco, respiratório, abdominal, etc.",
-)
-
-# =========================================================
-# 7) OSTEOESQUELÉTICAS / DISMORFISMOS
-# =========================================================
-st.subheader("Alterações osteoesqueléticas e dismorfismos")
-
-_ = text_area_lines(
-    label="",
-    lines=3,
-    key="osteo_dismorfismos",
-    placeholder=(
-        "Deformidades de coluna, retrações articulares, deformidades torácicas, deformidade de quadril, "
-        "escápula alada, hiperextensibilidade distal, palato em ogiva, maloclusão dentária."
-    ),
+    key="evolucao",
+    placeholder="Descreva a evolução clínica (progressão, flutuação, gatilhos, internações, etc.)",
 )
 
 # =========================================================
@@ -672,6 +450,236 @@ freq_row("Psicoterapia", "psico_chk", "psico_freq")
 st.markdown("**Outras terapias e informações:**")
 _ = text_area_lines("", 3, "outras_terapias", placeholder="")
 
+# =========================================================
+# 4) NEUROLÓGICO GERAL + EXAME DE FORÇA (panel)
+# =========================================================
+st.markdown("**Neurológico geral**")
+
+_ = text_area_lines(
+    label="",
+    lines=5,
+    key="neuro_geral",
+    placeholder=(
+        "Descrever cognição, força, reflexos osteotendinosos, reflexos patológicos (cutâneo plantar, axiais da face), "
+        "tônus, sensibilidade, coordenação, marcha, nervos cranianos"
+    ),
+)
+
+# --- aligned area: button left, summary right (like INCAT/PND area) ---
+c_left, c_right = st.columns([2.2, 9.8], vertical_alignment="top")
+
+with c_left:
+    if st.button("Exame de força", key="btn_open_forca"):
+        st.session_state["forca_open"] = True
+
+with c_right:
+    display_forca = st.session_state.get("forca_resumo", "").strip()
+    if not display_forca:
+        display_forca = "Gerado automaticamente ao preencher o exame de força"
+    st.text_area(
+        "Força motora (resumo)",
+        value=display_forca,
+        height=120,   # ~4–5 lines
+        disabled=True,
+    )
+
+
+# --------------------------
+# FORCE PANEL
+# --------------------------
+def _force_row_bilateral(label: str, key_d: str, key_e: str):
+    c0, c1, c2, _fill = st.columns([3.2, 1.4, 1.4, 10.0], vertical_alignment="center")
+    with c0:
+        st.markdown(f'<div class="inline-label">{label}</div>', unsafe_allow_html=True)
+    with c1:
+        small_mrc_box(key_d)
+    with c2:
+        small_mrc_box(key_e)
+
+def _force_row_single(label: str, key: str, placeholder: str = "0-5"):
+    c0, c1, _fill = st.columns([3.2, 3.0, 10.0], vertical_alignment="center")
+    with c0:
+        st.markdown(f'<div class="inline-label">{label}</div>', unsafe_allow_html=True)
+    with c1:
+        st.text_input("", key=key, placeholder=placeholder, label_visibility="collapsed", max_chars=1)
+
+
+def build_forca_summary() -> str:
+    """
+    Summarize only filled items.
+    """
+    lines: list[str] = []
+
+    def add_single(lbl: str, k: str):
+        v = _get(k)
+        if v != "":
+            lines.append(f"{lbl}: {v}")
+
+    def add_bilat(lbl: str, kd: str, ke: str):
+        vd = _get(kd)
+        ve = _get(ke)
+        if vd != "" or ve != "":
+            lines.append(f"{lbl}: D {vd or '-'} / E {ve or '-'}")
+
+    # Axial
+    axial = []
+    v_ext_tronco = _get("mrc_ext_tronco")
+    if v_ext_tronco:
+        axial.append(f"Extensores do tronco {v_ext_tronco}")
+    v_flex_pescoco = _get("mrc_flex_pescoco")
+    if v_flex_pescoco:
+        axial.append(f"Flexores do pescoço {v_flex_pescoco}")
+    v_flex_tronco = _get("mrc_flex_tronco")
+    if v_flex_tronco:
+        axial.append(f"Flexores do tronco {v_flex_tronco}")
+    
+
+
+    if axial:
+        lines.append("Axiais: " + " | ".join(axial))
+
+    # Upper
+    add_bilat("Abdução do ombro", "mrc_abd_ombro_D", "mrc_abd_ombro_E")
+    add_bilat("Adução do ombro", "mrc_add_ombro_D", "mrc_add_ombro_E")
+    add_bilat("Extensores do cotovelo", "mrc_ext_cotovelo_D", "mrc_ext_cotovelo_E")
+    add_bilat("Extensores de punho", "mrc_ext_punho_D", "mrc_ext_punho_E")
+    add_bilat("Flexores de punho", "mrc_flex_punho_D", "mrc_flex_punho_E")
+    add_bilat("Extensores de dedos", "mrc_ext_dedos_D", "mrc_ext_dedos_E")
+    add_bilat("Flexores profundos dos dedos", "mrc_fpd_D", "mrc_fpd_E")
+    add_bilat("Abdução dos dedos", "mrc_abd_dedos_D", "mrc_abd_dedos_E")
+    add_bilat("Oponência do polegar", "mrc_op_polegar_D", "mrc_op_polegar_E")
+    add_bilat("Oponência do dedo mínimo", "mrc_op_minimo_D", "mrc_op_minimo_E")
+
+    # Lower
+    add_bilat("Flexores de quadril", "mrc_flex_quadril_D", "mrc_flex_quadril_E")
+    add_bilat("Extensores do quadril", "mrc_ext_quadril_D", "mrc_ext_quadril_E")
+    add_bilat("Abdutores do quadril", "mrc_abd_quadril_D", "mrc_abd_quadril_E")
+    add_bilat("Adutores do quadril", "mrc_add_quadril_D", "mrc_add_quadril_E")
+    add_bilat("Flexores do joelho", "mrc_flex_joelho_D", "mrc_flex_joelho_E")
+    add_bilat("Extensores do joelho", "mrc_ext_joelho_D", "mrc_ext_joelho_E")
+    add_bilat("Dorsiflexão do pé", "mrc_df_pe_D", "mrc_df_pe_E")
+    add_bilat("Flexão do pé", "mrc_pf_pe_D", "mrc_pf_pe_E")
+    add_bilat("Eversores do pé", "mrc_ev_pe_D", "mrc_ev_pe_E")
+    add_bilat("Inversores do pé", "mrc_inv_pe_D", "mrc_inv_pe_E")
+    add_bilat("Extensores do hálux", "mrc_ext_halux_D", "mrc_ext_halux_E")
+    add_bilat("Flexores do hálux", "mrc_flex_halux_D", "mrc_flex_halux_E")
+
+    if not lines:
+        return ""
+    return "Força (MRC): " + " | ".join(lines)
+
+if st.session_state["forca_open"]:
+    st.markdown("#### Força motora (escala MRC)")
+
+    st.markdown("**Músculos axiais:**")
+    _force_row_single("Extensores do tronco", "mrc_ext_tronco", placeholder="0-5")
+    _force_row_single("Flexores do pescoço", "mrc_flex_pescoco", placeholder="0-5")
+    _force_row_single("Flexores do tronco", "mrc_flex_tronco", placeholder="0-5")
+
+    st.markdown("---")
+    st.markdown("**Músculos dos membros superiores:**")
+    # header
+    h0, h1, h2, _hf = st.columns([3.2, 1.4, 1.4, 10.0], vertical_alignment="center")
+    with h0:
+        st.markdown("**Grupo muscular**")
+    with h1:
+        st.markdown("**Direito**")
+    with h2:
+        st.markdown("**Esquerdo**")
+
+    _force_row_bilateral("Abdução do ombro", "mrc_abd_ombro_D", "mrc_abd_ombro_E")
+    _force_row_bilateral("Adução do ombro", "mrc_add_ombro_D", "mrc_add_ombro_E")
+    _force_row_bilateral("Extensores do cotovelo", "mrc_ext_cotovelo_D", "mrc_ext_cotovelo_E")
+    _force_row_bilateral("Extensores de punho", "mrc_ext_punho_D", "mrc_ext_punho_E")
+    _force_row_bilateral("Flexores de punho", "mrc_flex_punho_D", "mrc_flex_punho_E")
+    _force_row_bilateral("Extensores de dedos", "mrc_ext_dedos_D", "mrc_ext_dedos_E")
+    _force_row_bilateral("Flexores profundos dos dedos", "mrc_fpd_D", "mrc_fpd_E")
+    _force_row_bilateral("Abdução dos dedos", "mrc_abd_dedos_D", "mrc_abd_dedos_E")
+    _force_row_bilateral("Oponência do polegar", "mrc_op_polegar_D", "mrc_op_polegar_E")
+    _force_row_bilateral("Oponência do dedo mínimo", "mrc_op_minimo_D", "mrc_op_minimo_E")
+
+    st.markdown("---")
+    st.markdown("**Músculos dos membros inferiores:**")
+    # header
+    h0, h1, h2, _hf = st.columns([3.2, 1.4, 1.4, 10.0], vertical_alignment="center")
+    with h0:
+        st.markdown("**Grupo muscular**")
+    with h1:
+        st.markdown("**Direito**")
+    with h2:
+        st.markdown("**Esquerdo**")
+
+    _force_row_bilateral("Flexores de quadril", "mrc_flex_quadril_D", "mrc_flex_quadril_E")
+    _force_row_bilateral("Extensores do quadril", "mrc_ext_quadril_D", "mrc_ext_quadril_E")
+    _force_row_bilateral("Abdutores do quadril", "mrc_abd_quadril_D", "mrc_abd_quadril_E")
+    _force_row_bilateral("Adutores do quadril", "mrc_add_quadril_D", "mrc_add_quadril_E")
+    _force_row_bilateral("Flexores do joelho", "mrc_flex_joelho_D", "mrc_flex_joelho_E")
+    _force_row_bilateral("Extensores do joelho", "mrc_ext_joelho_D", "mrc_ext_joelho_E")
+    _force_row_bilateral("Dorsiflexão do pé", "mrc_df_pe_D", "mrc_df_pe_E")
+    _force_row_bilateral("Flexão do pé", "mrc_pf_pe_D", "mrc_pf_pe_E")
+    _force_row_bilateral("Eversores do pé", "mrc_ev_pe_D", "mrc_ev_pe_E")
+    _force_row_bilateral("Inversores do pé", "mrc_inv_pe_D", "mrc_inv_pe_E")
+    _force_row_bilateral("Extensores do hálux", "mrc_ext_halux_D", "mrc_ext_halux_E")
+    _force_row_bilateral("Flexores do hálux", "mrc_flex_halux_D", "mrc_flex_halux_E")
+
+    b1, b2, _bfill = st.columns([1.6, 1.2, 10.0], vertical_alignment="center")
+    with b1:
+        if st.button("Salvar exame de força", key="btn_save_forca", type="primary"):
+            st.session_state["forca_resumo"] = build_forca_summary()
+            st.session_state["forca_open"] = False
+            st.rerun()
+    with b2:
+        if st.button("Cancelar", key="btn_cancel_forca"):
+            st.session_state["forca_open"] = False
+            st.rerun()
+
+st.divider()
+
+# =========================================================
+# 5) EXAME NEUROMUSCULAR ESPECÍFICO
+# =========================================================
+st.markdown("**Exame neuromuscular específico**")
+
+_ = text_area_lines(
+    label="",
+    lines=4,
+    key="exame_neuromuscular_especifico",
+    placeholder=(
+        "Testes de fatigabilidade para miastenia, Simpson, Cogan, sinal da cortina, língua tri-sulcada, "
+        "facilitação do reflexo pós-esforço, lentificação do reflexo pupilar.\n"
+        "Fasciculações, mioquimias, rippling.\n"
+        "Miotonia (língua, membros, percussão)."
+    ),
+)
+
+st.divider()
+# =========================================================
+# 6) PELE / EXAME CLÍNICO GERAL
+# =========================================================
+st.markdown("**Alterações de pele e exame clínico geral**")
+
+_ = text_area_lines(
+    label="",
+    lines=3,
+    key="pele_clinico_geral",
+    placeholder="Alterações da pele (quelóide, hiperqueratose folicular), cardíaco, respiratório, abdominal, etc.",
+)
+
+st.divider()
+# =========================================================
+# 7) OSTEOESQUELÉTICAS / DISMORFISMOS
+# =========================================================
+st.markdown("**Alterações osteoesqueléticas e dismorfismos**")
+
+_ = text_area_lines(
+    label="",
+    lines=3,
+    key="osteo_dismorfismos",
+    placeholder=(
+        "Deformidades de coluna, retrações articulares, deformidades torácicas, deformidade de quadril, "
+        "escápula alada, hiperextensibilidade distal, palato em ogiva, maloclusão dentária."
+    ),
+)
 
 # =========================================================
 # 12) EXAMES COMPLEMENTARES
