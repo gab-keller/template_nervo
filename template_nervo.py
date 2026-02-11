@@ -516,7 +516,7 @@ _ = text_area_lines(
     label="",
     lines=3,
     key="exames_enmg",
-    placeholder="Data e conclusão da ENMG",
+    placeholder="",
 )
 
 st.markdown("**Líquor**")
@@ -524,7 +524,7 @@ _ = text_area_lines(
     label="",
     lines=3,
     key="exames_liquor",
-    placeholder="Data e achados do líquor",
+    placeholder="",
 )
 
 st.markdown("**USG nervos**")
@@ -532,7 +532,7 @@ _ = text_area_lines(
     label="",
     lines=3,
     key="exames_usg_nervos",
-    placeholder="Data e achados do USG",
+    placeholder="",
 )
 
 st.markdown("**Biópsia**")
@@ -540,7 +540,7 @@ _ = text_area_lines(
     label="",
     lines=3,
     key="exames_biopsia",
-    placeholder="Data e achados da  biópsia de nervo, glândulas salivares, panículo adiposo, etc.",
+    placeholder="",
 )
 
 st.markdown("**Demais exames**")
@@ -560,7 +560,7 @@ _ = text_area_lines(
     lines=4,
     key="impressao_discussao",
     placeholder="Impressão diagnóstica.\n"
-    "Inferência sobre o estado atual de controle da doença (estável, progredindo), baseado em quais métricas",
+    "Controle atual da doença (estável, progredindo), baseado em quais métricas",
 )
 
 # -----------------------------
@@ -650,7 +650,7 @@ _ = text_area_lines(
     label="",
     lines=4,
     key="conduta",
-    placeholder="Conduta diagnóstica e terapêutica",
+    placeholder="",
 )
 
 # =============================
