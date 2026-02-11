@@ -171,7 +171,12 @@ _ = text_area_lines(
     key="Id",
     placeholder="",)
     
-_ = inline_label_input("<strong>Idade de início</strong>", key="idade_inicio", placeholder="Ex.: 12 anos / 2021 / infância")
+c_label, c_input, _fill = st.columns([3.2, 7.0, 10.0], vertical_alignment="center")
+with c_label:
+    st.markdown('<div class="inline-label"><strong>Idade de início</strong></div>', unsafe_allow_html=True)
+with c_input:
+    st.text_input("", key="idade_inicio", placeholder="Ex.: 12 anos / 2021 / infância", label_visibility="collapsed")
+
 
 st.markdown("**História da doença atual:**")
 _ = text_area_lines(
