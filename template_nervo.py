@@ -602,7 +602,7 @@ if dx_categoria == "Neuropatia genética":
 # ---- Submenu: Neuropatia imunomediada (single choice) ----
 if dx_categoria == "Neuropatia imunomediada":
     with st.expander("Detalhar (Neuropatia imunomediada)", expanded=True):
-        imuno_options = ["CIDP", "Vasculite", "Ganglionopatia", "Neuropatia motora multifocal", "Outro"]
+        imuno_options = ["CIDP", "Vasculite", "Ganglionopatia", "Guillain-Barré", "Neuropatia motora multifocal", "Outro"]
         dx_imuno_choice = st.radio(
             "Especifique:",
             options=imuno_options,
