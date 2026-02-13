@@ -585,7 +585,7 @@ dx_categoria = st.radio(
 # ---- Submenu: Neuropatia genética (single choice) ----
 if dx_categoria == "Neuropatia genética":
     with st.expander("Detalhar (Neuropatia genética)", expanded=True):
-        gen_options = ["PMP22", "MPZ", "GJB1", "MFN2", "Outro"]
+        gen_options = ["TTR", "PPOX", "HMBS", "CPOX", "PMP22", "MPZ", "GJB1", "MFN2", "Outro"]
         dx_genetica_choice = st.radio(
             "Gene:",
             options=gen_options,
