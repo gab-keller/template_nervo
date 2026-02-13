@@ -385,7 +385,7 @@ if st.session_state["func_open"]:
     with c2:
         st.text_input("", key="perda_marcha_idade", placeholder="idade", label_visibility="collapsed")
     with c3:
-        st.text_input("", key="perda_marcha_ano", placeholder="ano", label_visibility="collapsed")
+        st.text_input("", key="perda_marcha_ano", placeholder="ou ano", label_visibility="collapsed")
 
     st.markdown("---")
     st.markdown("### Membros superiores")
@@ -412,7 +412,7 @@ if st.session_state["func_open"]:
     with c2:
         st.text_input("", key="vent_inicio_idade", placeholder="idade", label_visibility="collapsed")
     with c3:
-        st.text_input("", key="vent_inicio_ano", placeholder="ano", label_visibility="collapsed")
+        st.text_input("", key="vent_inicio_ano", placeholder="ou ano", label_visibility="collapsed")
 
     _ = text_area_lines(
         label="",
@@ -434,7 +434,7 @@ if st.session_state["func_open"]:
     with c2:
         st.text_input("", key="ort_inicio_idade", placeholder="idade", label_visibility="collapsed")
     with c3:
-        st.text_input("", key="ort_inicio_ano", placeholder="ano", label_visibility="collapsed")
+        st.text_input("", key="ort_inicio_ano", placeholder="ou ano", label_visibility="collapsed")
 
     st.markdown("---")
     st.markdown("### Nutrição")
@@ -447,7 +447,7 @@ if st.session_state["func_open"]:
     with c2:
         st.text_input("", key="nut_inicio_idade", placeholder="idade", label_visibility="collapsed")
     with c3:
-        st.text_input("", key="nut_inicio_ano", placeholder="ano", label_visibility="collapsed")
+        st.text_input("", key="nut_inicio_ano", placeholder="ou ano", label_visibility="collapsed")
 
     b1, b2, _bf = st.columns([1.8, 1.2, 10.0], vertical_alignment="center")
     with b1:
@@ -1538,17 +1538,17 @@ def _import_from_full_export(text: str) -> tuple[bool, str]:
 # SEÇÃO: EXPORTAR / IMPORTAR
 # =========================================================
 st.divider()
-st.subheader("Exportar / Importar (histórico completo)")
+st.subheader("Exportar / Importar")
 
 st.markdown(
     "<div style='background:#f5f5f5; padding:8px; border-radius:6px; font-size:14px;'>"
-    "A importação funciona apenas para texto no formato exato gerado por <strong>Exportar histórico completo</strong>."
+    "Função criada para avaliar a formatação final do texto gerado pelo template (não permanecerá no template final)."
     "</div>",
     unsafe_allow_html=True,
 )
 
 # -------- EXPORT --------
-st.markdown("### Exportar")
+st.subheader("### Exportar")
 
 tg_ok = st.session_state.get("tg_radio") is not None
 
@@ -1606,13 +1606,13 @@ if export_text:
 
 # -------- IMPORT --------
 st.markdown("---")
-st.markdown("### Importar para o formulário")
+st.subheader("Importar para o formulário")
 
 st.text_area(
-    "Cole aqui o texto exportado por 'Exportar histórico completo'",
+    "A importação funciona apenas para texto no formato exato gerado por <strong>Exportar histórico completo</strong>.",
     key="import_text",
-    height=260,
-    placeholder="Cole o texto aqui...",
+    height=80,
+    placeholder="Cole aqui o texto exportado por 'Exportar histórico completo'",
 )
 
 c_i1, c_i2, _ = st.columns([1.8, 1.4, 10.0], vertical_alignment="center")
