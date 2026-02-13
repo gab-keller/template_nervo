@@ -134,6 +134,56 @@ def _section(title: str, body: str) -> str:
 def _norm(text: str) -> str:
     return (text or "").replace("\r\n", "\n").replace("\r", "\n")
 
+def _import_apply_from_full_export(text: str) -> tuple[bool, str]:
+    secs = split_sections(text)
+    if not secs:
+        return False, "Não foi possível identificar as seções. Confirme se o texto foi exportado por 'Exportar histórico completo'."
+
+    _reset_form_state()
+
+    # --- ANAMNESE ---
+    anam = secs.get("ANAMNESE", "")
+    if anam:
+        st.session_state["Id"] = _extract_block(
+            anam,
+            "# Identificação:",
+            ["Idade de início:", "Idade ao diagnóstico:", "# HMA:"],
+        )
+        st.session_state["idade_inicio"] = _extract_line_value(anam, "Idade de início:")
+        st.session_state["idade_diagnostico"] = _extract_line_value(anam, "Idade ao diagnóstico:")
+        st.session_state["hda"] = _extract_block(anam, "# HMA:", [])
+
+    # --- ANTECEDENTES ---
+    ant = secs.get("ANTECEDENTES", "")
+    if ant:
+        st.session_state["antecedentes_pessoais"] = _extract_block(
+            ant,
+            "# Antecedentes pessoais:",
+            ["# História familiar:", "# Medicações em uso:", "Medicações prévias / motivo da suspensão:"],
+        )
+        st.session_state["antecedentes_familiares"] = _extract_block(
+            ant,
+            "# História familiar:",
+            ["# Medicações em uso:", "Medicações prévias / motivo da suspensão:"],
+        )
+        st.session_state["meds_em_uso"] = _extract_block(
+            ant,
+            "# Medicações em uso:",
+            ["Medicações prévias / motivo da suspensão:"],
+        )
+        st.session_state["meds_previas"] = _extract_block(ant, "Medicações prévias / motivo da suspensão:", [])
+
+    # (…continue o resto do seu parser aqui, igual ao que já existe…)
+
+    return True, "Texto importado para o formulário."
+
+if st.session_state.get("_do_import", False):
+    st.session_state["_do_import"] = False
+    ok, msg = _import_apply_from_full_export(st.session_state.get("_import_raw", ""))
+    st.session_state["_import_result"] = (ok, msg)
+    st.rerun()
+
+
 # =========================
 # SESSION STATE INIT
 # =========================
@@ -1089,8 +1139,9 @@ def _parse_freq(line: str) -> tuple[bool, str]:
     return True, ""  # marcou sim, mas não tem número
 
 def _reset_form_state():
-    # Text areas / inputs
-    text_keys = [
+    # Remove chaves para voltar ao default do widget e evitar conflito de tipo
+    keys_to_clear = [
+        # Text areas / inputs
         "Id","idade_inicio","idade_diagnostico","hda",
         "antecedentes_pessoais","antecedentes_familiares","meds_em_uso","meds_previas",
         "evolucao",
@@ -1109,32 +1160,17 @@ def _reset_form_state():
         "dx_topografico_outro","dx_noso_outros",
         "impressao","conduta",
         "forca_resumo","func_resumo","export_text",
-    ]
-    for k in text_keys:
-        st.session_state[k] = ""
-
-    # Radios / select state
-    st.session_state["dnpm_radio"] = None
-    st.session_state["vent_radio"] = None
-    st.session_state["tg_radio"] = None
-    st.session_state["tg_gene_sel"] = "Inconclusivo"
-    st.session_state["dx_topografico"] = []
-    # dx_noso_sel: volta para 0 (primeira opção) na UI; aqui só limpamos texto auxiliar
-    # (não setamos None porque o selectbox não aceita None).
-    # Se vier valor válido, vamos sobrescrever depois.
-
-    # Checkboxes
-    bool_keys = [
+        # Radios / selects
+        "dnpm_radio","vent_radio","tg_radio","tg_gene_sel","dx_topografico",
+        # Checkboxes
         "mi_marcha_aux","mi_cr_longas","mi_cr_perm","mi_nao_transfere",
         "ms_nao_acima_cabeca","ms_nao_acima_ombros","ms_nao_flex_antebraco",
         "ortese_mi","ortese_ms","colete_ortopedico",
         "nut_gtt",
         "fisio_motora_chk","fisio_resp_chk","ambu_chk","fono_chk",
     ]
-    for k in bool_keys:
-        st.session_state[k] = False
 
-    # Força MRC bilateral + axial
+    # MRC keys
     mrc_keys = [
         "mrc_ext_tronco","mrc_flex_pescoco","mrc_flex_tronco",
         "mrc_abd_ombro_D","mrc_abd_ombro_E","mrc_add_ombro_D","mrc_add_ombro_E",
@@ -1150,8 +1186,10 @@ def _reset_form_state():
         "mrc_ev_pe_D","mrc_ev_pe_E","mrc_inv_pe_D","mrc_inv_pe_E",
         "mrc_ext_halux_D","mrc_ext_halux_E","mrc_flex_halux_D","mrc_flex_halux_E",
     ]
-    for k in mrc_keys:
-        st.session_state[k] = ""
+
+    for k in keys_to_clear + mrc_keys:
+        st.session_state.pop(k, None)
+
 
 def _import_from_full_export(text: str) -> tuple[bool, str]:
     """
@@ -1624,16 +1662,35 @@ st.text_area(
 
 c_i1, c_i2, _ = st.columns([1.8, 1.4, 10.0], vertical_alignment="center")
 
+def _request_import():
+    st.session_state["_import_raw"] = st.session_state.get("import_text", "")
+    st.session_state["_do_import"] = True  # será tratado no topo do script
+
 with c_i1:
-    if st.button("Importar para o formulário", key="btn_import"):
-        ok, msg = _import_from_full_export(st.session_state.get("import_text", ""))
-        if ok:
-            st.success(msg)
-            st.rerun()
-        else:
-            st.error(msg)
+    st.button(
+        "Importar para o formulário",
+        key="btn_import",
+        on_click=_request_import,
+        type="primary",
+    )
 
 with c_i2:
     def clear_import():
         st.session_state["import_text"] = ""
-    st.button("Limpar texto colado", key="btn_clear_import", on_click=clear_import)
+
+    st.button(
+        "Limpar texto colado",
+        key="btn_clear_import",
+        on_click=clear_import,
+    )
+
+# --- Mostrar resultado da importação (se houver) ---
+res = st.session_state.get("_import_result")
+if res:
+    ok, msg = res
+    if ok:
+        st.success(msg)
+    else:
+        st.error(msg)
+    st.session_state.pop("_import_result", None)
+
