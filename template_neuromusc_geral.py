@@ -1538,7 +1538,7 @@ def _import_from_full_export(text: str) -> tuple[bool, str]:
 # SEÇÃO: EXPORTAR / IMPORTAR
 # =========================================================
 st.divider()
-st.subheader("Exportar / Importar")
+st.markdown("Exportar / Importar")
 
 st.markdown(
     "<div style='background:#f5f5f5; padding:8px; border-radius:6px; font-size:14px;'>"
@@ -1548,7 +1548,7 @@ st.markdown(
 )
 
 # -------- EXPORT --------
-st.subheader("### Exportar")
+st.subheader("Exportar")
 
 tg_ok = st.session_state.get("tg_radio") is not None
 
