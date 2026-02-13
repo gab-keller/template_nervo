@@ -379,13 +379,17 @@ if st.session_state["func_open"]:
     st.checkbox("Não faz transferências sem ajuda (cadeira para cama, por exemplo)", key="mi_nao_transfere")
 
     st.markdown("**Perda da marcha independente**")
-    c1, c2, c3, _f = st.columns([2.4, 2.2, 2.2, 10.0], vertical_alignment="center")
-    with c1:
-        st.markdown('<div class="inline-label">Perda da marcha independente</div>', unsafe_allow_html=True)
-    with c2:
-        st.text_input("", key="perda_marcha_idade", placeholder="idade", label_visibility="collapsed")
-    with c3:
-        st.text_input("", key="perda_marcha_ano", placeholder="ou ano", label_visibility="collapsed")
+    
+    c_label, c_idade, c_ano = st.columns([4.5, 2.5, 2.5], vertical_alignment="center")
+    
+    with c_label:
+        st.markdown('<div class="inline-label">Idade ou ano:</div>', unsafe_allow_html=True)
+    
+    with c_idade:
+        st.text_input("", key="marcha_perda_idade", placeholder="idade", label_visibility="collapsed")
+    
+    with c_ano:
+        st.text_input("", key="marcha_perda_ano", placeholder="ou ano", label_visibility="collapsed")
 
     st.markdown("---")
     st.markdown("### Membros superiores")
