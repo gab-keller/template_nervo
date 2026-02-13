@@ -852,6 +852,22 @@ dx_options = [
 
 dx_categoria = st.radio("", options=dx_options, key="radio_dx_categoria")
 
+if dx_categoria == "Outras neuropatias adquiridas (nutricional, endocrinológica, infecciosa, tóxica, etc.)":
+    with st.expander("Detalhar (Outras neuropatias adquiridas)", expanded=True):
+        st.text_input(
+            "Especifique:",
+            key="dx_outras_adquiridas",
+            placeholder="Ex.: neuropatia alcoólica, B12, hipotireoidismo, HIV, quimioterapia, etc.",
+        )
+
+if dx_categoria == "Outros diagnósticos (neurônio motor, junção e músculo)":
+    with st.expander("Detalhar (Outros diagnósticos)", expanded=True):
+        st.text_input(
+            "Especifique:",
+            key="dx_outros_diagnosticos",
+            placeholder="Ex.: ELA, miastenia, miopatia inflamatória, etc.",
+        )
+
 if dx_categoria == "Neuropatia genética":
     with st.expander("Detalhar (Neuropatia genética)", expanded=True):
         gen_options = ["TTR", "PPOX", "HMBS", "CPOX", "PMP22", "MPZ", "GJB1", "MFN2", "Outro"]
@@ -898,10 +914,22 @@ def build_export_text(include_all: bool) -> str:
     parts = []
 
     if include_all:
-        parts.append(_section(
-            "HISTÓRIA CLÍNICA",
-            f"Idade ao início dos sintomas: {_get('idade_inicio_sintomas')}\n{_get('historia_clinica_texto')}"
-        ))
+        # ✅ Identificação + História clínica (no mesmo bloco)
+        hc_lines = []
+        ident = _get("Id")
+        if ident:
+            hc_lines.append("Identificação:\n" + ident)
+
+        idade_ini = _get("idade_inicio_sintomas")
+        if idade_ini:
+            hc_lines.append(f"Idade ao início dos sintomas: {idade_ini}")
+
+        hma = _get("historia_clinica_texto")
+        if hma:
+            hc_lines.append(hma)
+
+        parts.append(_section("HISTÓRIA CLÍNICA", "\n".join([x for x in hc_lines if x.strip()])))
+
         parts.append(_section("ANTECEDENTES PATOLÓGICOS", _get("antecedentes_patologicos_texto")))
 
         hf_txt = _get("historia_familiar_texto")
@@ -1028,6 +1056,16 @@ def build_export_text(include_all: bool) -> str:
             sub = _get("dx_imuno_outro") or "Outro (não especificado)"
         if sub:
             dx_lines.append(f"Subtipo: {sub}")
+
+    if dx == "Outras neuropatias adquiridas (nutricional, endocrinológica, infecciosa, tóxica, etc.)":
+        extra = _get("dx_outras_adquiridas")
+        if extra:
+            dx_lines.append(f"Especifique: {extra}")
+
+    if dx == "Outros diagnósticos (neurônio motor, junção e músculo)":
+        extra = _get("dx_outros_diagnosticos")
+        if extra:
+            dx_lines.append(f"Especifique: {extra}")
 
     parts.append(_section("DIAGNÓSTICO / HIPÓTESE DIAGNÓSTICA", "\n".join(dx_lines)))
 
