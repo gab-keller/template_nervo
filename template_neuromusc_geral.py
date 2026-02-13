@@ -488,7 +488,7 @@ _ = text_area_lines(
     "",
     3,
     "outras_terapias",
-    placeholder="Ex.: Terapia ocupacional (freq/objetivo), Psicoterapia (freq/objetivo), outras intervenções relevantes.",
+    placeholder="Ex.: Terapia ocupacional (frequência), Psicoterapia (frequência), outras",
 )
 
 # =========================================================
@@ -707,7 +707,7 @@ _ = text_area_lines("", 3, "ex_enmg", placeholder="")
 _ = inline_label_input("Decremento / Jitter na EMG", key="ex_decremento_jitter", placeholder="")
 _ = inline_label_input("Anticorpos de junção", key="ex_anticorpos_juncao", placeholder="")
 
-st.markdown("**RM muscular**")
+st.markdown("**RM muscular e USG de nervos**")
 _ = text_area_lines("", 3, "ex_rm_muscular", placeholder="")
 st.markdown("**Biópsia muscular**")
 _ = text_area_lines("", 3, "ex_biopsia_muscular", placeholder="")
@@ -777,7 +777,7 @@ topo_options = [
     "Outro",
 ]
 
-topo_sel = st.multiselect("Selecione (pode marcar mais de um)", options=topo_options, key="dx_topografico")
+topo_sel = st.multiselect("Selecione todos que se aplicam ao caso", options=topo_options, key="dx_topografico")
 
 if "Outro" in (topo_sel or []):
     _ = inline_label_input("Especifique (topográfico)", key="dx_topografico_outro", placeholder="")
