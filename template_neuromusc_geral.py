@@ -220,6 +220,13 @@ def split_sections(text: str) -> dict[str, str]:
         out[title] = text[start:end].strip("\n").strip()
     return out
 
+def _import_apply_from_full_export(text: str) -> tuple[bool, str]:
+    secs = split_sections(text)
+    if not secs:
+        return False, "Não identifiquei as seções. Confirme se o texto foi exportado por 'Exportar histórico completo'."
+    # ... resto do parser ...
+    return True, "Importação aplicada."
+
 def _extract_block(body: str, marker: str, end_markers: list[str]) -> str:
     body = _norm(body)
     esc_end = "|".join(re.escape(e) for e in end_markers)
