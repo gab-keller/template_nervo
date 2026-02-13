@@ -220,12 +220,6 @@ def split_sections(text: str) -> dict[str, str]:
         out[title] = text[start:end].strip("\n").strip()
     return out
 
-def _import_apply_from_full_export(text: str) -> tuple[bool, str]:
-    secs = split_sections(text)
-    if not secs:
-        return False, "Não identifiquei as seções. Confirme se o texto foi exportado por 'Exportar histórico completo'."
-    # ... resto do parser ...
-    return True, "Importação aplicada."
 
 def _extract_block(body: str, marker: str, end_markers: list[str]) -> str:
     body = _norm(body)
@@ -689,9 +683,10 @@ def _import_from_full_export(text: str) -> tuple[bool, str]:
 
 if st.session_state.get("_do_import", False):
     st.session_state["_do_import"] = False
-    ok, msg = _import_apply_from_full_export(st.session_state.get("_import_raw", ""))
+    ok, msg = _import_from_full_export(st.session_state.get("_import_raw", ""))
     st.session_state["_import_result"] = (ok, msg)
     st.rerun()
+
 
 # =========================================================
 # 1) ANAMNESE
@@ -935,10 +930,10 @@ if st.session_state["func_open"]:
         st.markdown('<div class="inline-label">Idade ou ano:</div>', unsafe_allow_html=True)
     
     with c_idade:
-        st.text_input("", key="marcha_perda_idade", placeholder="idade", label_visibility="collapsed")
+        st.text_input("", key="perda_marcha_idade", placeholder="idade", label_visibility="collapsed")
     
     with c_ano:
-        st.text_input("", key="marcha_perda_ano", placeholder="ou ano", label_visibility="collapsed")
+        st.text_input("", key="perda_marcha_ano", placeholder="ou ano", label_visibility="collapsed")
 
     st.markdown("---")
     st.markdown("### Membros superiores")
