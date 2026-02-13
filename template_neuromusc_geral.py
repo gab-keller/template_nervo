@@ -1,7 +1,8 @@
+import re
 import streamlit as st
 
 # =========================================================
-# CONFIG + GLOBAL STYLES (same structure as reference model)
+# CONFIG + GLOBAL STYLES
 # =========================================================
 st.set_page_config(page_title="Template neuromuscular geral", layout="wide")
 
@@ -130,6 +131,9 @@ def _section(title: str, body: str) -> str:
         return ""
     return f"{title}\n{body}\n"
 
+def _norm(text: str) -> str:
+    return (text or "").replace("\r\n", "\n").replace("\r", "\n")
+
 # =========================
 # SESSION STATE INIT
 # =========================
@@ -138,6 +142,7 @@ st.session_state.setdefault("forca_resumo", "")
 st.session_state.setdefault("func_open", False)
 st.session_state.setdefault("func_resumo", "")
 st.session_state.setdefault("export_text", "")
+st.session_state.setdefault("import_text", "")
 
 # =========================================================
 # 1) ANAMNESE
@@ -154,7 +159,7 @@ with c_label:
 with c_input:
     st.text_input("", key="idade_inicio", placeholder="Ex.: 12 anos / 2021 / infância", label_visibility="collapsed")
 
-# ✅ Novo campo: Idade ao diagnóstico (logo abaixo)
+# Idade ao diagnóstico
 c_label, c_input, _fill = st.columns([3.2, 7.0, 10.0], vertical_alignment="center")
 with c_label:
     st.markdown('<div class="inline-label"><strong>Idade ao diagnóstico</strong></div>', unsafe_allow_html=True)
@@ -253,9 +258,7 @@ with cR:
 def build_func_summary() -> str:
     parts: list[str] = []
 
-    # -------------------------
     # MMII
-    # -------------------------
     mmii = []
     if st.session_state.get("mi_marcha_aux"):
         mmii.append("Marcha com auxiliar de marcha")
@@ -265,7 +268,6 @@ def build_func_summary() -> str:
         mmii.append("Cadeira de rodas permanente")
     if st.session_state.get("mi_nao_transfere"):
         mmii.append("Não faz transferências sem ajuda")
-
     if mmii:
         parts.append("MMII: " + "; ".join(mmii))
 
@@ -279,9 +281,7 @@ def build_func_summary() -> str:
             msg += (" / " if perda_idade else "") + f"ano {perda_ano}"
         parts.append(msg)
 
-    # -------------------------
-    # MMSS (mantido como estava)
-    # -------------------------
+    # MMSS (mantido)
     ms = []
     ms_map = [
         ("Não eleva os braços acima da cabeça", "ms_nao_acima_cabeca"),
@@ -294,9 +294,7 @@ def build_func_summary() -> str:
     if ms:
         parts.append("MMSS: " + "; ".join(ms))
 
-    # -------------------------
     # Ventilação
-    # -------------------------
     vent_line = _get("vent_radio")
     vent_inicio_idade = _get("vent_inicio_idade")
     vent_inicio_ano = _get("vent_inicio_ano")
@@ -315,9 +313,7 @@ def build_func_summary() -> str:
             vtxt += (" — " if vtxt else "") + vent_info
         parts.append("Ventilação: " + vtxt)
 
-    # -------------------------
     # Ortopédicos
-    # -------------------------
     ort = []
     if st.session_state.get("ortese_mi"):
         ort.append("Órtese MMII")
@@ -340,7 +336,6 @@ def build_func_summary() -> str:
             otxt += " — " + inicio
         parts.append("Ortopédicos: " + otxt)
     else:
-        # mesmo se não marcou, mas preencheu início (evita “sumir” dado)
         if ort_inicio_idade or ort_inicio_ano:
             inicio = "Início: "
             if ort_inicio_idade:
@@ -349,13 +344,12 @@ def build_func_summary() -> str:
                 inicio += (" / " if ort_inicio_idade else "") + f"ano {ort_inicio_ano}"
             parts.append("Ortopédicos: " + inicio)
 
-    # -------------------------
     # Nutrição
-    # -------------------------
+    nut_inicio_idade = _get("nut_inicio_idade")
+    nut_inicio_ano = _get("nut_inicio_ano")
+
     if st.session_state.get("nut_gtt"):
         ntxt = "Gastrostomia (GTT)"
-        nut_inicio_idade = _get("nut_inicio_idade")
-        nut_inicio_ano = _get("nut_inicio_ano")
         if nut_inicio_idade or nut_inicio_ano:
             inicio = "Início: "
             if nut_inicio_idade:
@@ -365,8 +359,6 @@ def build_func_summary() -> str:
             ntxt += " — " + inicio
         parts.append("Nutrição: " + ntxt)
     else:
-        nut_inicio_idade = _get("nut_inicio_idade")
-        nut_inicio_ano = _get("nut_inicio_ano")
         if nut_inicio_idade or nut_inicio_ano:
             inicio = "Início: "
             if nut_inicio_idade:
@@ -380,9 +372,6 @@ def build_func_summary() -> str:
 if st.session_state["func_open"]:
     st.markdown("#### DISPOSITIVOS E SUPORTE FUNCIONAL")
 
-    # -------------------------
-    # MMII
-    # -------------------------
     st.markdown("### Membros inferiores")
     st.checkbox("Marcha com auxiliar de marcha (bengala, muleta, andador)", key="mi_marcha_aux")
     st.checkbox("Cadeira de rodas para longas distâncias", key="mi_cr_longas")
@@ -399,22 +388,13 @@ if st.session_state["func_open"]:
         st.text_input("", key="perda_marcha_ano", placeholder="ano", label_visibility="collapsed")
 
     st.markdown("---")
-
-    # -------------------------
-    # MMSS (mantido)
-    # -------------------------
     st.markdown("### Membros superiores")
     st.checkbox("Não eleva os braços acima da cabeça", key="ms_nao_acima_cabeca")
     st.checkbox("Não eleva os braços acima dos ombros", key="ms_nao_acima_ombros")
     st.checkbox("Não faz flexão dos antebraços", key="ms_nao_flex_antebraco")
 
     st.markdown("---")
-
-    # -------------------------
-    # Ventilação (ajuste VNI)
-    # -------------------------
     st.markdown("### Ventilação")
-
     vent_options = [
         "Sem indicação",
         "Tem indicação de VNI (BiPAP), mas não faz uso",
@@ -442,10 +422,6 @@ if st.session_state["func_open"]:
     )
 
     st.markdown("---")
-
-    # -------------------------
-    # Ortopédicos
-    # -------------------------
     st.markdown("### Ortopédicos")
     st.checkbox("Órtese MMII", key="ortese_mi")
     st.checkbox("Órtese MMSS", key="ortese_ms")
@@ -461,10 +437,6 @@ if st.session_state["func_open"]:
         st.text_input("", key="ort_inicio_ano", placeholder="ano", label_visibility="collapsed")
 
     st.markdown("---")
-
-    # -------------------------
-    # Nutrição
-    # -------------------------
     st.markdown("### Nutrição")
     st.checkbox("Gastrostomia (GTT)", key="nut_gtt")
 
@@ -500,17 +472,10 @@ def freq_row(label: str, check_key: str, freq_key: str, placeholder: str = "veze
     with c1:
         checked = st.checkbox("Sim", key=check_key)
     with c2:
-        st.text_input(
-            "",
-            key=freq_key,
-            placeholder=placeholder,
-            label_visibility="collapsed",
-            disabled=not checked,
-        )
+        st.text_input("", key=freq_key, placeholder=placeholder, label_visibility="collapsed", disabled=not checked)
 
 freq_row("Fisioterapia motora", "fisio_motora_chk", "fisio_motora_freq")
 freq_row("Fisioterapia respiratória", "fisio_resp_chk", "fisio_resp_freq")
-# ✅ AMBU padronizado + placeholder vezes/dia
 freq_row("AMBU / máscara facial", "ambu_chk", "ambu_freq", placeholder="vezes/dia")
 freq_row("Fonoterapia", "fono_chk", "fono_freq")
 
@@ -547,12 +512,7 @@ with c_right:
     display_forca = st.session_state.get("forca_resumo", "").strip()
     if not display_forca:
         display_forca = "Gerado automaticamente ao preencher o exame de força"
-    st.text_area(
-        "Força motora (resumo)",
-        value=display_forca,
-        height=120,
-        disabled=True,
-    )
+    st.text_area("Força motora (resumo)", value=display_forca, height=120, disabled=True)
 
 def _force_row_bilateral(label: str, key_d: str, key_e: str):
     c0, c1, c2, _fill = st.columns([3.2, 1.4, 1.4, 10.0], vertical_alignment="center")
@@ -579,6 +539,7 @@ def build_forca_summary() -> str:
         if vd != "" or ve != "":
             lines.append(f"{lbl}: D {vd or '-'} / E {ve or '-'}")
 
+    # Axial
     axial = []
     v_ext_tronco = _get("mrc_ext_tronco")
     if v_ext_tronco:
@@ -592,6 +553,7 @@ def build_forca_summary() -> str:
     if axial:
         lines.append("Axiais: " + " | ".join(axial))
 
+    # Upper
     add_bilat("Abdução do ombro", "mrc_abd_ombro_D", "mrc_abd_ombro_E")
     add_bilat("Adução do ombro", "mrc_add_ombro_D", "mrc_add_ombro_E")
     add_bilat("Flexores do cotovelo", "mrc_flex_cotovelo_D", "mrc_flex_cotovelo_E")
@@ -604,6 +566,7 @@ def build_forca_summary() -> str:
     add_bilat("Oponência do polegar", "mrc_op_polegar_D", "mrc_op_polegar_E")
     add_bilat("Oponência do dedo mínimo", "mrc_op_minimo_D", "mrc_op_minimo_E")
 
+    # Lower
     add_bilat("Flexores de quadril", "mrc_flex_quadril_D", "mrc_flex_quadril_E")
     add_bilat("Extensores do quadril", "mrc_ext_quadril_D", "mrc_ext_quadril_E")
     add_bilat("Abdutores do quadril", "mrc_abd_quadril_D", "mrc_abd_quadril_E")
@@ -738,11 +701,8 @@ st.markdown("**Eletroneuromiografia**")
 _ = text_area_lines("", 3, "ex_enmg", placeholder="")
 
 _ = inline_label_input("Decremento / Jitter na EMG", key="ex_decremento_jitter", placeholder="")
-# ✅ removido: Anti-receptor de acetilcolina
-# ✅ renomeado: Outros anticorpos de junção -> Anticorpos de junção
 _ = inline_label_input("Anticorpos de junção", key="ex_anticorpos_juncao", placeholder="")
 
-# ✅ removido: Anticorpos para miosites
 st.markdown("**RM muscular**")
 _ = text_area_lines("", 3, "ex_rm_muscular", placeholder="")
 st.markdown("**Biópsia muscular**")
@@ -773,12 +733,12 @@ if tg is None:
     st.warning("⚠️ Selecione uma opção em **Teste genético** (campo obrigatório).")
 
 genes_options = [
-    "Inconclusivo",   # ✅ antes era "Teste negativo"
-    "ACTA1", "ANO5", "CAPN3", "CHRNE", "CLCN1", "CPT2", "D4Z4", "DES", "DMD", "DMPK", "DOK7", "DUX4", "DYSF",
-    "FKRP", "GAA", "GJB1", "GNE", "LAMA2", "LMNA", "MFN2", "MPZ", "MTM1", "NEB", "PYGM", "RAPSN", "RYR1",
-    "SMN1", "TPM3", "TTN", "TTR", "POMT1", "POMT2", "POMGNT1", "COL6A1", "COL6A2", "COL6A3",
-    "SGCA", "SGCB", "SGCD", "SGCG",
-    "Outro",          # ✅ novo
+    "Inconclusivo",
+    "ACTA1","ANO5","CAPN3","CHRNE","CLCN1","CPT2","D4Z4","DES","DMD","DMPK","DOK7","DUX4","DYSF",
+    "FKRP","GAA","GJB1","GNE","LAMA2","LMNA","MFN2","MPZ","MTM1","NEB","PYGM","RAPSN","RYR1",
+    "SMN1","TPM3","TTN","TTR","POMT1","POMT2","POMGNT1","COL6A1","COL6A2","COL6A3",
+    "SGCA","SGCB","SGCD","SGCG",
+    "Outro",
 ]
 
 if tg == "Teste genético realizado":
@@ -897,7 +857,7 @@ st.subheader("Conduta")
 _ = text_area_lines("", 4, "conduta", placeholder="")
 
 # =========================================================
-# EXPORT
+# EXPORT + IMPORT (novo)
 # =========================================================
 def build_export_text(include_all: bool) -> str:
     parts: list[str] = []
@@ -973,25 +933,19 @@ def build_export_text(include_all: bool) -> str:
 
     # Exame físico
     exf_lines = []
-    neuro_geral = _get("neuro_geral")
-    if neuro_geral:
-        exf_lines.append("# Exame Neurológico:\n" + neuro_geral)
+    if _get("neuro_geral"):
+        exf_lines.append("# Exame Neurológico:\n" + _get("neuro_geral"))
 
     forca = _get("forca_resumo") or build_forca_summary()
     if forca:
         exf_lines.append(forca)
 
-    nm = _get("exame_neuromuscular_especifico")
-    if nm:
-        exf_lines.append("Exame neuromuscular específico:\n" + nm)
-
-    pele = _get("pele_clinico_geral")
-    if pele:
-        exf_lines.append("Alterações de pele e exame clínico geral:\n" + pele)
-
-    osteo = _get("osteo_dismorfismos")
-    if osteo:
-        exf_lines.append("Alterações osteoesqueléticas e dismorfismos:\n" + osteo)
+    if _get("exame_neuromuscular_especifico"):
+        exf_lines.append("Exame neuromuscular específico:\n" + _get("exame_neuromuscular_especifico"))
+    if _get("pele_clinico_geral"):
+        exf_lines.append("Alterações de pele e exame clínico geral:\n" + _get("pele_clinico_geral"))
+    if _get("osteo_dismorfismos"):
+        exf_lines.append("Alterações osteoesqueléticas e dismorfismos:\n" + _get("osteo_dismorfismos"))
 
     parts.append(_section("EXAME FÍSICO", "\n\n".join([x for x in exf_lines if x.strip()])))
 
@@ -1035,6 +989,7 @@ def build_export_text(include_all: bool) -> str:
                     tg_lines.append("Gene/resultado: " + (gene_outro if gene_outro else "Outro (não especificado)"))
                 else:
                     tg_lines.append("Gene/resultado: " + gene_sel)
+
             det = []
             if _get("tg_exame_nome"):
                 det.append("Exame: " + _get("tg_exame_nome"))
@@ -1044,9 +999,10 @@ def build_export_text(include_all: bool) -> str:
                 det.append("Local: " + _get("tg_local"))
             if det:
                 tg_lines.append("Detalhes: " + " | ".join(det))
+
     parts.append(_section(">> Teste genético", "\n".join([x for x in tg_lines if x.strip()])))
 
-    # Diagnóstico (topográfico + nosológico)
+    # Diagnóstico
     dx_lines = []
 
     topo_list = st.session_state.get("dx_topografico", []) or []
@@ -1068,33 +1024,546 @@ def build_export_text(include_all: bool) -> str:
         dx_lines.append(f"Nosológico: {noso}")
 
     parts.append(_section("DIAGNÓSTICO", "\n".join([x for x in dx_lines if x.strip()])))
-
     parts.append(_section("IMPRESSÃO", _get("impressao")))
     parts.append(_section("CONDUTA", _get("conduta")))
 
     cleaned = [p for p in parts if p.strip()]
     return "\n".join(cleaned).strip() + "\n"
 
+# ---------- IMPORT PARSER ----------
+_SECTION_TITLES = [
+    "ANAMNESE",
+    "ANTECEDENTES",
+    "DESENVOLVIMENTO NEUROPSICOMOTOR",
+    "EVOLUÇÃO CLÍNICA",
+    ">> Dispositivos e suporte funcional:",
+    ">> Seguimento multidisciplinar",
+    "EXAME FÍSICO",
+    "EXAMES COMPLEMENTARES",
+    ">> Teste genético",
+    "DIAGNÓSTICO",
+    "IMPRESSÃO",
+    "CONDUTA",
+]
+
+def split_sections(text: str) -> dict[str, str]:
+    text = _norm(text).strip()
+    if not text:
+        return {}
+    patt = r"^(%s)\s*$" % "|".join(re.escape(t) for t in _SECTION_TITLES)
+    matches = list(re.finditer(patt, text, flags=re.M))
+    if not matches:
+        return {}
+    out: dict[str, str] = {}
+    for i, m in enumerate(matches):
+        title = m.group(1)
+        start = m.end()
+        end = matches[i + 1].start() if i + 1 < len(matches) else len(text)
+        out[title] = text[start:end].strip("\n").strip()
+    return out
+
+def _extract_block(body: str, marker: str, end_markers: list[str]) -> str:
+    body = _norm(body)
+    esc_end = "|".join(re.escape(e) for e in end_markers)
+    pattern = re.escape(marker) + r"\n(.*?)(?=\n(?:" + esc_end + r")|\Z)"
+    m = re.search(pattern, body, flags=re.S)
+    return (m.group(1).strip() if m else "")
+
+def _extract_line_value(body: str, prefix: str) -> str:
+    body = _norm(body)
+    for ln in body.split("\n"):
+        if ln.strip().startswith(prefix):
+            return ln.split(prefix, 1)[1].strip()
+    return ""
+
+def _parse_freq(line: str) -> tuple[bool, str]:
+    # "Nome: 2x/sem" -> ("Sim", "2")
+    m = re.search(r":\s*([0-9]+(?:[.,][0-9]+)?)\s*x/", line)
+    if m:
+        return True, m.group(1).replace(",", ".").strip()
+    return True, ""  # marcou sim, mas não tem número
+
+def _reset_form_state():
+    # Text areas / inputs
+    text_keys = [
+        "Id","idade_inicio","idade_diagnostico","hda",
+        "antecedentes_pessoais","antecedentes_familiares","meds_em_uso","meds_previas",
+        "evolucao",
+        "dnpm_sustento_cefalico","dnpm_engatinhar","dnpm_andar_sem_apoio","dnpm_formar_frases","dnpm_sentar_meses",
+        "dnpm_ficar_de_pe_anos","dnpm_andar_com_apoio_anos","dnpm_primeiras_palavras_anos","dnpm_controle_esfincteriano_meses",
+        "perda_marcha_idade","perda_marcha_ano",
+        "vent_inicio_idade","vent_inicio_ano","vent_info_adicional",
+        "ort_inicio_idade","ort_inicio_ano",
+        "nut_inicio_idade","nut_inicio_ano",
+        "fisio_motora_freq","fisio_resp_freq","ambu_freq","fono_freq","outras_terapias",
+        "neuro_geral",
+        "exame_neuromuscular_especifico","pele_clinico_geral","osteo_dismorfismos",
+        "ex_cpk","ex_enmg","ex_decremento_jitter","ex_anticorpos_juncao","ex_rm_muscular","ex_biopsia_muscular",
+        "ex_eco","ex_holter","ex_espirometria","ex_polissonografia","ex_outros",
+        "tg_exame_nome","tg_data","tg_local","tg_gene_outro",
+        "dx_topografico_outro","dx_noso_outros",
+        "impressao","conduta",
+        "forca_resumo","func_resumo","export_text",
+    ]
+    for k in text_keys:
+        st.session_state[k] = ""
+
+    # Radios / select state
+    st.session_state["dnpm_radio"] = None
+    st.session_state["vent_radio"] = None
+    st.session_state["tg_radio"] = None
+    st.session_state["tg_gene_sel"] = "Inconclusivo"
+    st.session_state["dx_topografico"] = []
+    # dx_noso_sel: volta para 0 (primeira opção) na UI; aqui só limpamos texto auxiliar
+    # (não setamos None porque o selectbox não aceita None).
+    # Se vier valor válido, vamos sobrescrever depois.
+
+    # Checkboxes
+    bool_keys = [
+        "mi_marcha_aux","mi_cr_longas","mi_cr_perm","mi_nao_transfere",
+        "ms_nao_acima_cabeca","ms_nao_acima_ombros","ms_nao_flex_antebraco",
+        "ortese_mi","ortese_ms","colete_ortopedico",
+        "nut_gtt",
+        "fisio_motora_chk","fisio_resp_chk","ambu_chk","fono_chk",
+    ]
+    for k in bool_keys:
+        st.session_state[k] = False
+
+    # Força MRC bilateral + axial
+    mrc_keys = [
+        "mrc_ext_tronco","mrc_flex_pescoco","mrc_flex_tronco",
+        "mrc_abd_ombro_D","mrc_abd_ombro_E","mrc_add_ombro_D","mrc_add_ombro_E",
+        "mrc_flex_cotovelo_D","mrc_flex_cotovelo_E","mrc_ext_cotovelo_D","mrc_ext_cotovelo_E",
+        "mrc_ext_punho_D","mrc_ext_punho_E","mrc_flex_punho_D","mrc_flex_punho_E",
+        "mrc_ext_dedos_D","mrc_ext_dedos_E","mrc_fpd_D","mrc_fpd_E",
+        "mrc_abd_dedos_D","mrc_abd_dedos_E","mrc_op_polegar_D","mrc_op_polegar_E",
+        "mrc_op_minimo_D","mrc_op_minimo_E",
+        "mrc_flex_quadril_D","mrc_flex_quadril_E","mrc_ext_quadril_D","mrc_ext_quadril_E",
+        "mrc_abd_quadril_D","mrc_abd_quadril_E","mrc_add_quadril_D","mrc_add_quadril_E",
+        "mrc_flex_joelho_D","mrc_flex_joelho_E","mrc_ext_joelho_D","mrc_ext_joelho_E",
+        "mrc_df_pe_D","mrc_df_pe_E","mrc_pf_pe_D","mrc_pf_pe_E",
+        "mrc_ev_pe_D","mrc_ev_pe_E","mrc_inv_pe_D","mrc_inv_pe_E",
+        "mrc_ext_halux_D","mrc_ext_halux_E","mrc_flex_halux_D","mrc_flex_halux_E",
+    ]
+    for k in mrc_keys:
+        st.session_state[k] = ""
+
+def _import_from_full_export(text: str) -> tuple[bool, str]:
+    """
+    Importa um texto colado cuja formatação esteja exatamente no padrão do
+    'Exportar histórico completo'. Campos ausentes -> ficam em branco.
+    """
+    secs = split_sections(text)
+    if not secs:
+        return False, "Não foi possível identificar as seções. Confirme se o texto foi exportado pelo botão 'Exportar histórico completo'."
+
+    _reset_form_state()
+
+    # --- ANAMNESE ---
+    anam = secs.get("ANAMNESE", "")
+    if anam:
+        st.session_state["Id"] = _extract_block(
+            anam,
+            "# Identificação:",
+            ["Idade de início:", "Idade ao diagnóstico:", "# HMA:"],
+        )
+        st.session_state["idade_inicio"] = _extract_line_value(anam, "Idade de início:")
+        st.session_state["idade_diagnostico"] = _extract_line_value(anam, "Idade ao diagnóstico:")
+        st.session_state["hda"] = _extract_block(anam, "# HMA:", [])
+
+    # --- ANTECEDENTES ---
+    ant = secs.get("ANTECEDENTES", "")
+    if ant:
+        st.session_state["antecedentes_pessoais"] = _extract_block(
+            ant,
+            "# Antecedentes pessoais:",
+            ["# História familiar:", "# Medicações em uso:", "Medicações prévias / motivo da suspensão:"],
+        )
+        st.session_state["antecedentes_familiares"] = _extract_block(
+            ant,
+            "# História familiar:",
+            ["# Medicações em uso:", "Medicações prévias / motivo da suspensão:"],
+        )
+        st.session_state["meds_em_uso"] = _extract_block(
+            ant,
+            "# Medicações em uso:",
+            ["Medicações prévias / motivo da suspensão:"],
+        )
+        st.session_state["meds_previas"] = _extract_block(ant, "Medicações prévias / motivo da suspensão:", [])
+
+    # --- DNPM ---
+    dnpm_txt = secs.get("DESENVOLVIMENTO NEUROPSICOMOTOR", "")
+    if dnpm_txt:
+        m = re.search(r"^Status:\s*(.+)\s*$", _norm(dnpm_txt), flags=re.M)
+        if m:
+            val = m.group(1).strip()
+            if val in ["Normal", "Não sabe informar", "Atraso desenvolvimento"]:
+                st.session_state["dnpm_radio"] = val
+
+        if st.session_state.get("dnpm_radio") == "Atraso desenvolvimento":
+            mm = re.search(r"Marcos:\n(.*)", _norm(dnpm_txt), flags=re.S)
+            if mm:
+                for ln in mm.group(1).split("\n"):
+                    if ":" in ln:
+                        k, v = ln.split(":", 1)
+                        k = k.strip()
+                        v = v.strip()
+                        map_milestones = {
+                            "Sustento cefálico": "dnpm_sustento_cefalico",
+                            "Engatinhar": "dnpm_engatinhar",
+                            "Andar sem apoio": "dnpm_andar_sem_apoio",
+                            "Formar frases": "dnpm_formar_frases",
+                            "Sentar (meses)": "dnpm_sentar_meses",
+                            "Ficar de pé (anos)": "dnpm_ficar_de_pe_anos",
+                            "Andar com apoio (anos)": "dnpm_andar_com_apoio_anos",
+                            "Primeiras palavras (anos)": "dnpm_primeiras_palavras_anos",
+                            "Controle esfincteriano (meses)": "dnpm_controle_esfincteriano_meses",
+                        }
+                        if k in map_milestones:
+                            st.session_state[map_milestones[k]] = v
+
+    # --- EVOLUÇÃO ---
+    st.session_state["evolucao"] = secs.get("EVOLUÇÃO CLÍNICA", "").strip()
+
+    # --- DISPOSITIVOS E SUPORTE FUNCIONAL ---
+    func = secs.get(">> Dispositivos e suporte funcional:", "")
+    if func:
+        for ln in _norm(func).split("\n"):
+            l = ln.strip()
+            if l.startswith("MMII:"):
+                items = [x.strip() for x in l.split("MMII:", 1)[1].split(";") if x.strip()]
+                st.session_state["mi_marcha_aux"] = any("Marcha com auxiliar" in x for x in items)
+                st.session_state["mi_cr_longas"] = any("longas distâncias" in x for x in items)
+                st.session_state["mi_cr_perm"] = any("permanente" in x for x in items)
+                st.session_state["mi_nao_transfere"] = any("transferências" in x for x in items)
+
+            if l.startswith("Perda da marcha independente:"):
+                # exemplos: "Perda ...: idade 12 / ano 2021"
+                idade = re.search(r"idade\s+([0-9]+)", l)
+                ano = re.search(r"ano\s+([0-9]{4})", l)
+                if idade:
+                    st.session_state["perda_marcha_idade"] = idade.group(1)
+                if ano:
+                    st.session_state["perda_marcha_ano"] = ano.group(1)
+
+            if l.startswith("MMSS:"):
+                items = [x.strip() for x in l.split("MMSS:", 1)[1].split(";") if x.strip()]
+                st.session_state["ms_nao_acima_cabeca"] = any("acima da cabeça" in x for x in items)
+                st.session_state["ms_nao_acima_ombros"] = any("acima dos ombros" in x for x in items)
+                st.session_state["ms_nao_flex_antebraco"] = any("flexão dos antebraços" in x for x in items)
+
+            if l.startswith("Ventilação:"):
+                rest = l.split("Ventilação:", 1)[1].strip()
+                # "opção — Início: ... — info"
+                parts = [p.strip() for p in rest.split("—")]
+                if parts:
+                    opt = parts[0].strip()
+                    if opt in [
+                        "Sem indicação",
+                        "Tem indicação de VNI (BiPAP), mas não faz uso",
+                        "VNI (BiPAP) – uso noturno",
+                        "VNI (BiPAP) – uso diurno e noturno",
+                        "Traqueostomia",
+                        "Ventilação invasiva permanente",
+                    ]:
+                        st.session_state["vent_radio"] = opt
+                for p in parts[1:]:
+                    if p.startswith("Início:"):
+                        idade = re.search(r"idade\s+([0-9]+)", p)
+                        ano = re.search(r"ano\s+([0-9]{4})", p)
+                        if idade:
+                            st.session_state["vent_inicio_idade"] = idade.group(1)
+                        if ano:
+                            st.session_state["vent_inicio_ano"] = ano.group(1)
+                    else:
+                        if p:
+                            st.session_state["vent_info_adicional"] = (st.session_state["vent_info_adicional"] + ("\n" if st.session_state["vent_info_adicional"] else "") + p).strip()
+
+            if l.startswith("Ortopédicos:"):
+                rest = l.split("Ortopédicos:", 1)[1].strip()
+                # "Órtese MMII; Órtese MMSS; ... — Início: ..."
+                chunks = [p.strip() for p in rest.split("—")]
+                items = [x.strip() for x in chunks[0].split(";") if x.strip()]
+                st.session_state["ortese_mi"] = any("Órtese MMII" in x for x in items)
+                st.session_state["ortese_ms"] = any("Órtese MMSS" in x for x in items)
+                st.session_state["colete_ortopedico"] = any("Colete" in x for x in items)
+                for p in chunks[1:]:
+                    if p.startswith("Início:"):
+                        idade = re.search(r"idade\s+([0-9]+)", p)
+                        ano = re.search(r"ano\s+([0-9]{4})", p)
+                        if idade:
+                            st.session_state["ort_inicio_idade"] = idade.group(1)
+                        if ano:
+                            st.session_state["ort_inicio_ano"] = ano.group(1)
+
+            if l.startswith("Nutrição:"):
+                rest = l.split("Nutrição:", 1)[1].strip()
+                st.session_state["nut_gtt"] = "Gastrostomia (GTT)" in rest
+                if "Início:" in rest:
+                    idade = re.search(r"idade\s+([0-9]+)", rest)
+                    ano = re.search(r"ano\s+([0-9]{4})", rest)
+                    if idade:
+                        st.session_state["nut_inicio_idade"] = idade.group(1)
+                    if ano:
+                        st.session_state["nut_inicio_ano"] = ano.group(1)
+
+        st.session_state["func_resumo"] = build_func_summary()
+
+    # --- MULTIDISCIPLINAR ---
+    multi = secs.get(">> Seguimento multidisciplinar", "")
+    if multi:
+        t = _norm(multi)
+        # linhas "Nome: ..."
+        for ln in t.split("\n"):
+            l = ln.strip()
+            if l.startswith("Fisioterapia motora:"):
+                ok, num = _parse_freq(l)
+                st.session_state["fisio_motora_chk"] = ok
+                st.session_state["fisio_motora_freq"] = num
+            if l.startswith("Fisioterapia respiratória:"):
+                ok, num = _parse_freq(l)
+                st.session_state["fisio_resp_chk"] = ok
+                st.session_state["fisio_resp_freq"] = num
+            if l.startswith("AMBU / máscara facial:"):
+                ok, num = _parse_freq(l)
+                st.session_state["ambu_chk"] = ok
+                st.session_state["ambu_freq"] = num
+            if l.startswith("Fonoterapia:"):
+                ok, num = _parse_freq(l)
+                st.session_state["fono_chk"] = ok
+                st.session_state["fono_freq"] = num
+
+        # bloco "Outras:\n..."
+        m = re.search(r"Outras:\n(.*)$", t, flags=re.S)
+        if m:
+            st.session_state["outras_terapias"] = m.group(1).strip()
+
+    # --- EXAME FÍSICO ---
+    exf = secs.get("EXAME FÍSICO", "")
+    if exf:
+        body = _norm(exf)
+
+        st.session_state["neuro_geral"] = _extract_block(
+            body,
+            "# Exame Neurológico:",
+            ["Força motora (MRC):", "Exame neuromuscular específico:", "Alterações de pele e exame clínico geral:", "Alterações osteoesqueléticas e dismorfismos:"],
+        )
+
+        # Força (tenta reconstituir os MRCs)
+        m = re.search(r"^Força motora \(MRC\):\s*(.*)$", body, flags=re.M)
+        if m:
+            summary = m.group(0).strip()  # linha inteira
+            # Parse de itens separados por " | "
+            items = [x.strip() for x in summary.split("|")]
+            axial_labels = {
+                "Extensores do tronco": "mrc_ext_tronco",
+                "Flexores do pescoço": "mrc_flex_pescoco",
+                "Flexores do tronco": "mrc_flex_tronco",
+            }
+            bilat_map = {
+                "Abdução do ombro": ("mrc_abd_ombro_D", "mrc_abd_ombro_E"),
+                "Adução do ombro": ("mrc_add_ombro_D", "mrc_add_ombro_E"),
+                "Flexores do cotovelo": ("mrc_flex_cotovelo_D", "mrc_flex_cotovelo_E"),
+                "Extensores do cotovelo": ("mrc_ext_cotovelo_D", "mrc_ext_cotovelo_E"),
+                "Extensores de punho": ("mrc_ext_punho_D", "mrc_ext_punho_E"),
+                "Flexores de punho": ("mrc_flex_punho_D", "mrc_flex_punho_E"),
+                "Extensores de dedos": ("mrc_ext_dedos_D", "mrc_ext_dedos_E"),
+                "Flexores profundos dos dedos": ("mrc_fpd_D", "mrc_fpd_E"),
+                "Abdução dos dedos": ("mrc_abd_dedos_D", "mrc_abd_dedos_E"),
+                "Oponência do polegar": ("mrc_op_polegar_D", "mrc_op_polegar_E"),
+                "Oponência do dedo mínimo": ("mrc_op_minimo_D", "mrc_op_minimo_E"),
+                "Flexores de quadril": ("mrc_flex_quadril_D", "mrc_flex_quadril_E"),
+                "Extensores do quadril": ("mrc_ext_quadril_D", "mrc_ext_quadril_E"),
+                "Abdutores do quadril": ("mrc_abd_quadril_D", "mrc_abd_quadril_E"),
+                "Adutores do quadril": ("mrc_add_quadril_D", "mrc_add_quadril_E"),
+                "Flexores do joelho": ("mrc_flex_joelho_D", "mrc_flex_joelho_E"),
+                "Extensores do joelho": ("mrc_ext_joelho_D", "mrc_ext_joelho_E"),
+                "Dorsiflexão do pé": ("mrc_df_pe_D", "mrc_df_pe_E"),
+                "Flexão do pé": ("mrc_pf_pe_D", "mrc_pf_pe_E"),
+                "Eversores do pé": ("mrc_ev_pe_D", "mrc_ev_pe_E"),
+                "Inversores do pé": ("mrc_inv_pe_D", "mrc_inv_pe_E"),
+                "Extensores do hálux": ("mrc_ext_halux_D", "mrc_ext_halux_E"),
+                "Flexores do hálux": ("mrc_flex_halux_D", "mrc_flex_halux_E"),
+            }
+
+            # Cada item pode ser "Axiais: Extensores do tronco 5" OU "Flexores do pescoço 4"
+            for it in items:
+                it = it.strip()
+                it = it.replace("Força motora (MRC):", "").strip()
+                it = it.replace("Axiais:", "").strip()
+
+                # axial: "<label> <val>"
+                mm = re.match(r"^(Extensores do tronco|Flexores do pescoço|Flexores do tronco)\s+([0-5])\s*$", it)
+                if mm:
+                    st.session_state[axial_labels[mm.group(1)]] = mm.group(2)
+                    continue
+
+                # bilat: "<label>: D x / E y"
+                mm = re.match(r"^(.*?):\s*D\s*([0-5\-]?)\s*/\s*E\s*([0-5\-]?)\s*$", it)
+                if mm:
+                    lbl = mm.group(1).strip()
+                    vd = mm.group(2).strip().replace("-", "")
+                    ve = mm.group(3).strip().replace("-", "")
+                    if lbl in bilat_map:
+                        kd, ke = bilat_map[lbl]
+                        st.session_state[kd] = vd
+                        st.session_state[ke] = ve
+
+            st.session_state["forca_resumo"] = build_forca_summary()
+
+        st.session_state["exame_neuromuscular_especifico"] = _extract_block(
+            body,
+            "Exame neuromuscular específico:",
+            ["Alterações de pele e exame clínico geral:", "Alterações osteoesqueléticas e dismorfismos:"],
+        )
+        st.session_state["pele_clinico_geral"] = _extract_block(
+            body,
+            "Alterações de pele e exame clínico geral:",
+            ["Alterações osteoesqueléticas e dismorfismos:"],
+        )
+        st.session_state["osteo_dismorfismos"] = _extract_block(
+            body,
+            "Alterações osteoesqueléticas e dismorfismos:",
+            [],
+        )
+
+    # --- EXAMES COMPLEMENTARES ---
+    exc = secs.get("EXAMES COMPLEMENTARES", "")
+    if exc:
+        body = _norm(exc)
+
+        # linha simples
+        st.session_state["ex_cpk"] = _extract_line_value(body, "CPK:")
+
+        # blocos
+        st.session_state["ex_enmg"] = _extract_block(
+            body,
+            "Eletroneuromiografia:",
+            ["Decremento / Jitter na EMG:", "Anticorpos de junção:", "RM muscular:", "Biópsia muscular:", "ECO:", "Holter:", "Espirometria:", "Polissonografia:", "Outros exames:"],
+        )
+        st.session_state["ex_decremento_jitter"] = _extract_line_value(body, "Decremento / Jitter na EMG:")
+        st.session_state["ex_anticorpos_juncao"] = _extract_line_value(body, "Anticorpos de junção:")
+
+        st.session_state["ex_rm_muscular"] = _extract_block(
+            body,
+            "RM muscular:",
+            ["Biópsia muscular:", "ECO:", "Holter:", "Espirometria:", "Polissonografia:", "Outros exames:"],
+        )
+        st.session_state["ex_biopsia_muscular"] = _extract_block(
+            body,
+            "Biópsia muscular:",
+            ["ECO:", "Holter:", "Espirometria:", "Polissonografia:", "Outros exames:"],
+        )
+
+        for marker, key in [
+            ("ECO:", "ex_eco"),
+            ("Holter:", "ex_holter"),
+            ("Espirometria:", "ex_espirometria"),
+            ("Polissonografia:", "ex_polissonografia"),
+            ("Outros exames:", "ex_outros"),
+        ]:
+            st.session_state[key] = _extract_block(body, marker, [])
+
+    # --- TESTE GENÉTICO ---
+    tgsec = secs.get(">> Teste genético", "")
+    if tgsec:
+        lines = [ln.strip() for ln in _norm(tgsec).split("\n") if ln.strip()]
+        if lines:
+            status = lines[0]
+            if status in ["Não se aplica", "Não realizado", "Teste genético realizado"]:
+                st.session_state["tg_radio"] = status
+
+        # gene
+        for ln in lines[1:]:
+            if ln.startswith("Gene/resultado:"):
+                gene = ln.split("Gene/resultado:", 1)[1].strip()
+                if gene in genes_options:
+                    st.session_state["tg_gene_sel"] = gene
+                else:
+                    st.session_state["tg_gene_sel"] = "Outro"
+                    st.session_state["tg_gene_outro"] = gene
+
+            if ln.startswith("Detalhes:"):
+                det = ln.split("Detalhes:", 1)[1].strip()
+                # "Exame: ... | Data: ... | Local: ..."
+                for part in [p.strip() for p in det.split("|")]:
+                    if part.startswith("Exame:"):
+                        st.session_state["tg_exame_nome"] = part.split("Exame:", 1)[1].strip()
+                    if part.startswith("Data:"):
+                        st.session_state["tg_data"] = part.split("Data:", 1)[1].strip()
+                    if part.startswith("Local:"):
+                        st.session_state["tg_local"] = part.split("Local:", 1)[1].strip()
+
+    # --- DIAGNÓSTICO ---
+    dxsec = secs.get("DIAGNÓSTICO", "")
+    if dxsec:
+        for ln in _norm(dxsec).split("\n"):
+            l = ln.strip()
+            if l.startswith("Topográfico:"):
+                items = [x.strip() for x in l.split("Topográfico:", 1)[1].split("|")]
+                sel = []
+                other_txts = []
+                for it in items:
+                    if it in topo_options:
+                        sel.append(it)
+                    elif it:  # não bate nas opções -> vira "Outro"
+                        other_txts.append(it)
+                if other_txts:
+                    sel.append("Outro")
+                    # se vier mais de um "Outro", concatena
+                    st.session_state["dx_topografico_outro"] = " / ".join(other_txts)
+                st.session_state["dx_topografico"] = sel
+
+            if l.startswith("Nosológico:"):
+                val = l.split("Nosológico:", 1)[1].strip()
+                if val in dx_noso_options:
+                    st.session_state["dx_noso_sel"] = val
+                else:
+                    st.session_state["dx_noso_sel"] = "Outros"
+                    st.session_state["dx_noso_outros"] = val
+
+    # --- IMPRESSÃO / CONDUTA ---
+    st.session_state["impressao"] = secs.get("IMPRESSÃO", "").strip()
+    st.session_state["conduta"] = secs.get("CONDUTA", "").strip()
+
+    # Recalcula resumos
+    if not st.session_state.get("func_resumo"):
+        st.session_state["func_resumo"] = build_func_summary()
+    if not st.session_state.get("forca_resumo"):
+        st.session_state["forca_resumo"] = build_forca_summary()
+
+    return True, "Importação concluída. Campos ausentes no texto permaneceram em branco."
+
+# =========================================================
+# SEÇÃO: EXPORTAR / IMPORTAR
+# =========================================================
 st.divider()
-st.subheader("Exportar texto acima")
+st.subheader("Exportar / Importar (histórico completo)")
 
 st.markdown(
     "<div style='background:#f5f5f5; padding:8px; border-radius:6px; font-size:14px;'>"
-    "Funções a seguir disponíveis exclusivamente para fase de testes do template"
+    "A importação funciona apenas para texto no formato exato gerado por <strong>Exportar histórico completo</strong>."
     "</div>",
     unsafe_allow_html=True,
 )
 
-# ✅ Campo obrigatório: não permitir exportar sem escolha em Teste genético
+# -------- EXPORT --------
+st.markdown("### Exportar")
+
 tg_ok = st.session_state.get("tg_radio") is not None
 
 def do_export(include_all: bool):
     if st.session_state.get("tg_radio") is None:
         st.session_state["export_text"] = ""
         return
+    # Atualiza resumos se o usuário preencheu e não clicou em "Salvar"
+    if not st.session_state.get("func_resumo"):
+        st.session_state["func_resumo"] = build_func_summary()
+    if not st.session_state.get("forca_resumo"):
+        st.session_state["forca_resumo"] = build_forca_summary()
     st.session_state["export_text"] = build_export_text(include_all=include_all)
 
-c_exp1, c_exp2, c_exp3 = st.columns([1.2, 1.8, 1.2], vertical_alignment="center")
+c_exp1, c_exp2, c_exp3 = st.columns([1.3, 2.0, 1.3], vertical_alignment="center")
 with c_exp1:
     st.button(
         "Exportar evolução",
@@ -1114,7 +1583,7 @@ with c_exp2:
 with c_exp3:
     def clear_export():
         st.session_state["export_text"] = ""
-    st.button("Trocar modalidade de exportação", key="btn_clear_export", on_click=clear_export)
+    st.button("Limpar exportação", key="btn_clear_export", on_click=clear_export)
 
 if not tg_ok:
     st.error("Para exportar, selecione uma opção em **Teste genético** (campo obrigatório).")
@@ -1122,9 +1591,9 @@ if not tg_ok:
 export_text = st.session_state.get("export_text", "")
 if export_text:
     st.text_area(
-        "Texto para copiar (Ctrl+A, Ctrl+C)",
+        "Texto exportado (Ctrl+A, Ctrl+C)",
         value=export_text,
-        height=380,
+        height=320,
         key="export_text_area",
     )
     st.download_button(
@@ -1134,3 +1603,30 @@ if export_text:
         mime="text/plain",
         key="download_txt_export",
     )
+
+# -------- IMPORT --------
+st.markdown("---")
+st.markdown("### Importar para o formulário")
+
+st.text_area(
+    "Cole aqui o texto exportado por 'Exportar histórico completo'",
+    key="import_text",
+    height=260,
+    placeholder="Cole o texto aqui...",
+)
+
+c_i1, c_i2, _ = st.columns([1.8, 1.4, 10.0], vertical_alignment="center")
+
+with c_i1:
+    if st.button("Importar para o formulário", key="btn_import"):
+        ok, msg = _import_from_full_export(st.session_state.get("import_text", ""))
+        if ok:
+            st.success(msg)
+            st.rerun()
+        else:
+            st.error(msg)
+
+with c_i2:
+    def clear_import():
+        st.session_state["import_text"] = ""
+    st.button("Limpar texto colado", key="btn_clear_import", on_click=clear_import)
