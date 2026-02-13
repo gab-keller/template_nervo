@@ -1538,7 +1538,7 @@ def _import_from_full_export(text: str) -> tuple[bool, str]:
 # SEÇÃO: EXPORTAR / IMPORTAR
 # =========================================================
 st.divider()
-st.markdown("Exportar / Importar")
+st.subheader("Exportar / Importar")
 
 st.markdown(
     "<div style='background:#f5f5f5; padding:8px; border-radius:6px; font-size:14px;'>"
@@ -1548,7 +1548,7 @@ st.markdown(
 )
 
 # -------- EXPORT --------
-st.subheader("Exportar")
+st.markdown("#### Exportar")
 
 tg_ok = st.session_state.get("tg_radio") is not None
 
@@ -1562,6 +1562,7 @@ def do_export(include_all: bool):
     if not st.session_state.get("forca_resumo"):
         st.session_state["forca_resumo"] = build_forca_summary()
     st.session_state["export_text"] = build_export_text(include_all=include_all)
+
 
 c_exp1, c_exp2, c_exp3 = st.columns([1.3, 2.0, 1.3], vertical_alignment="center")
 with c_exp1:
@@ -1606,7 +1607,8 @@ if export_text:
 
 # -------- IMPORT --------
 st.markdown("---")
-st.subheader("Importar para o formulário")
+st.markdown("#### Importar para o formulário")
+
 
 st.text_area(
     "A importação funciona apenas para texto no formato exato gerado por <strong>Exportar histórico completo</strong>.",
