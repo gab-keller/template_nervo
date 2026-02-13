@@ -468,7 +468,7 @@ def compute_mrc_ss(mrc_keys_in: list[str]) -> tuple[bool, int | None]:
 # =========================================================
 # IDENTIFICAÇÃO
 # =========================================================
-st.markdown("**Identificação:**")
+st.subheader("Identificação:")
 _ = text_area_lines(label="", lines=1, key="id_texto", placeholder="")
 
 # =========================================================
