@@ -784,6 +784,8 @@ if "Outro" in (topo_sel or []):
 st.subheader("Diagnóstico nosológico")
 
 dx_noso_options = [
+    "Não esclarecido (provavelmente genético)",
+    "Não esclarecido (provavelmente adquirido)",
     "Atrofia muscular espinhal tipo 1 (SMN1) (G12.0)",
     "Atrofia muscular espinhal tipo 2 (SMN1) (G12.1)",
     "Atrofia muscular espinhal tipo 3 (SMN1) (G12.1)",
@@ -831,7 +833,6 @@ dx_noso_options = [
     "Mitocondrial (G71.3)",
     "Miopatia inespecífica (G72.9)",
     "Miopatia inflamatória (polimiosite/necrotizante/dermatomiosite) (M33, M33.2)",
-    "Não esclarecido",
     "Quadro funcional",
     "Central",
     "Outros",
