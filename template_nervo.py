@@ -124,6 +124,7 @@ def _section(title: str, body: str) -> str:
     return f"{title}\n{body}\n"
 
 _SECTION_TITLES = [
+    "IDENTIFICAÇÃO",
     "HISTÓRIA CLÍNICA",
     "ANTECEDENTES PATOLÓGICOS",
     "HISTÓRIA FAMILIAR",
@@ -161,13 +162,19 @@ def _extract_line_value(body: str, prefix: str) -> str:
 
 def _extract_block(body: str, marker: str, end_markers: list[str]) -> str:
     body = _norm(body)
-    esc_end = "|".join(re.escape(e) for e in end_markers)
-    pattern = re.escape(marker) + r"\n(.*?)(?=\n(?:" + esc_end + r")|\Z)"
+    esc_end = "|".join(re.escape(e) for e in end_markers) if end_markers else ""
+    pattern = (
+        re.escape(marker) + r"\n(.*?)(?=\n(?:" + esc_end + r")|\Z)"
+        if esc_end
+        else re.escape(marker) + r"\n(.*)\Z"
+    )
     m = re.search(pattern, body, flags=re.S)
     return (m.group(1).strip() if m else "")
 
 def _reset_form_state():
     keys_to_clear = [
+        # Identificação
+        "id_texto",
         # História clínica
         "idade_inicio_sintomas", "historia_clinica_texto",
         # Antecedentes / familiar
@@ -189,6 +196,8 @@ def _reset_form_state():
         "impressao_discussao", "radio_dx_categoria",
         "dx_genetica_choice", "dx_genetica_outro",
         "dx_imuno_choice", "dx_imuno_outro",
+        "dx_outras_adquiridas",
+        "dx_outros_diagnosticos",
         "conduta",
         # Export/import UI states
         "export_mode", "export_text", "import_text",
@@ -207,10 +216,6 @@ def _reset_form_state():
         st.session_state.pop(k, None)
 
 def _import_from_full_export(text: str) -> tuple[bool, str]:
-    """
-    Importa um texto colado cuja formatação esteja no padrão do
-    'Exportar histórico completo'. Campos ausentes -> ficam em branco.
-    """
     secs = split_sections(text)
     if not secs:
         return False, "Não foi possível identificar as seções. Confirme se o texto foi exportado por 'Exportar histórico completo'."
@@ -218,31 +223,32 @@ def _import_from_full_export(text: str) -> tuple[bool, str]:
     _reset_form_state()
 
     # -----------------------------
+    # IDENTIFICAÇÃO
+    # -----------------------------
+    ident = secs.get("IDENTIFICAÇÃO", "")
+    if ident:
+        st.session_state["id_texto"] = _norm(ident).strip()
+
+    # -----------------------------
     # HISTÓRIA CLÍNICA
     # -----------------------------
     hc = secs.get("HISTÓRIA CLÍNICA", "")
     if hc:
         hc_n = _norm(hc)
-        # primeira linha: "Idade ao início dos sintomas: X"
         idade = _extract_line_value(hc_n, "Idade ao início dos sintomas:")
         if idade:
             st.session_state["idade_inicio_sintomas"] = idade
-            # remove a linha do corpo
             lines = [ln for ln in hc_n.split("\n") if not ln.strip().startswith("Idade ao início dos sintomas:")]
             st.session_state["historia_clinica_texto"] = "\n".join(lines).strip()
         else:
             st.session_state["historia_clinica_texto"] = hc_n.strip()
 
-    # -----------------------------
-    # ANTECEDENTES PATOLÓGICOS
-    # -----------------------------
+    # ANTECEDENTES
     ap = secs.get("ANTECEDENTES PATOLÓGICOS", "")
     if ap:
         st.session_state["antecedentes_patologicos_texto"] = _norm(ap).strip()
 
-    # -----------------------------
     # HISTÓRIA FAMILIAR
-    # -----------------------------
     hf = secs.get("HISTÓRIA FAMILIAR", "")
     if hf:
         t = _norm(hf).strip()
@@ -250,15 +256,12 @@ def _import_from_full_export(text: str) -> tuple[bool, str]:
         if padrao:
             st.session_state["hf_esporadico"] = "Esporádico" in padrao
             st.session_state["hf_familiar"] = "Familiar" in padrao
-            # remove linha do padrão do texto
             lines = [ln for ln in t.split("\n") if not ln.strip().startswith("Padrão de herança:")]
             st.session_state["historia_familiar_texto"] = "\n".join(lines).strip()
         else:
             st.session_state["historia_familiar_texto"] = t
 
-    # -----------------------------
     # MEDICAÇÕES
-    # -----------------------------
     meds = secs.get("MEDICAÇÕES MODIFICADORAS DE DOENÇA / IMUNOSSUPRESSORES", "")
     if meds:
         t = _norm(meds)
@@ -274,7 +277,6 @@ def _import_from_full_export(text: str) -> tuple[bool, str]:
             elif trat == "sem tratamento medicamentoso":
                 st.session_state["trat_sem_tempo"] = tempo
 
-        # Blocos (com ou sem conteúdo)
         st.session_state["meds_atual_previo_texto"] = _extract_block(
             t,
             "Medicamentos de uso atual ou prévio:",
@@ -290,9 +292,7 @@ def _import_from_full_export(text: str) -> tuple[bool, str]:
         if transp:
             st.session_state["paciente_transplantado"] = transp.strip().lower().startswith("sim")
 
-    # -----------------------------
-    # EVOLUÇÃO CLÍNICA
-    # -----------------------------
+    # EVOLUÇÃO
     evo = secs.get("EVOLUÇÃO CLÍNICA", "")
     if evo:
         t = _norm(evo)
@@ -305,7 +305,6 @@ def _import_from_full_export(text: str) -> tuple[bool, str]:
         if tempo:
             st.session_state["evo_estavel_tempo"] = tempo
 
-        # descrição e outras escalas como blocos
         desc = _extract_block(
             t,
             "Descrição da evolução:",
@@ -326,39 +325,30 @@ def _import_from_full_export(text: str) -> tuple[bool, str]:
         if outras:
             st.session_state["outras_escalas_seguimento"] = outras
 
-    # -----------------------------
-    # EXAME FÍSICO NEUROLÓGICO
-    # -----------------------------
+    # EXAME FÍSICO
     exf = secs.get("EXAME FÍSICO NEUROLÓGICO", "")
     if exf:
         t = _norm(exf).strip()
 
-        # Deformidades (se existir)
         deform = _extract_block(t, "Deformidades osteoesqueléticas e exame clínico geral:", [])
         if deform:
             st.session_state["deformidades_osteo_texto"] = deform
 
-        # MRC block
         mrc_block = _extract_block(t, "MRC:", ["Deformidades osteoesqueléticas e exame clínico geral:"])
-        # Texto neurológico = tudo antes de "MRC:" (ou antes de deformidades, se não houver MRC)
-        split_idx = None
+
         idx_mrc = t.find("MRC:\n")
         idx_def = t.find("Deformidades osteoesqueléticas e exame clínico geral:\n")
-
         candidates = [i for i in [idx_mrc, idx_def] if i != -1]
-        if candidates:
-            split_idx = min(candidates)
+        split_idx = min(candidates) if candidates else None
 
         if split_idx is not None:
             neuro_txt = t[:split_idx].strip()
             if neuro_txt:
                 st.session_state["exame_fisico_neuro_texto"] = neuro_txt
         else:
-            # sem marcadores
             if t:
                 st.session_state["exame_fisico_neuro_texto"] = t
 
-        # Parse MRC lines -> preenche os campos
         if mrc_block:
             map_lbl = {
                 "Abdução do ombro": ("mrc_ombro_D", "mrc_ombro_E"),
@@ -383,13 +373,10 @@ def _import_from_full_export(text: str) -> tuple[bool, str]:
                     st.session_state[kd] = vd
                     st.session_state[ke] = ve
 
-    # -----------------------------
     # EXAMES COMPLEMENTARES
-    # -----------------------------
     exc = secs.get("EXAMES COMPLEMENTARES", "")
     if exc:
         t = _norm(exc).strip()
-        # Linhas "ENMG: ..." etc
         for prefix, key in [
             ("ENMG:", "exames_enmg"),
             ("Líquor:", "exames_liquor"),
@@ -401,22 +388,17 @@ def _import_from_full_export(text: str) -> tuple[bool, str]:
             if val:
                 st.session_state[key] = val
 
-    # -----------------------------
     # IMPRESSÃO
-    # -----------------------------
     imp = secs.get("IMPRESSÃO E DISCUSSÃO", "")
     if imp:
         st.session_state["impressao_discussao"] = _norm(imp).strip()
 
-    # -----------------------------
     # DIAGNÓSTICO
-    # -----------------------------
     dx = secs.get("DIAGNÓSTICO / HIPÓTESE DIAGNÓSTICA", "")
     if dx:
         t = [ln.strip() for ln in _norm(dx).split("\n") if ln.strip()]
         if t:
             cat = t[0]
-            # precisa existir nas opções do radio
             if cat in [
                 "Neuropatia genética",
                 "Neuropatia imunomediada",
@@ -433,10 +415,14 @@ def _import_from_full_export(text: str) -> tuple[bool, str]:
                 if ln.startswith("Subtipo:"):
                     st.session_state["dx_imuno_choice"] = "Outro"
                     st.session_state["dx_imuno_outro"] = ln.split("Subtipo:", 1)[1].strip()
+                if ln.startswith("Especifique:"):
+                    extra = ln.split("Especifique:", 1)[1].strip()
+                    if cat == "Outras neuropatias adquiridas (nutricional, endocrinológica, infecciosa, tóxica, etc.)":
+                        st.session_state["dx_outras_adquiridas"] = extra
+                    if cat == "Outros diagnósticos (neurônio motor, junção e músculo)":
+                        st.session_state["dx_outros_diagnosticos"] = extra
 
-    # -----------------------------
     # CONDUTA
-    # -----------------------------
     cnd = secs.get("CONDUTA", "")
     if cnd:
         st.session_state["conduta"] = _norm(cnd).strip()
@@ -465,10 +451,6 @@ mrc_keys = [
 ]
 
 def compute_mrc_ss(mrc_keys_in: list[str]) -> tuple[bool, int | None]:
-    """
-    Returns (is_complete_and_valid, total_or_None)
-    Valid only if ALL fields are filled with integers 0–5.
-    """
     values = []
     for k in mrc_keys_in:
         v = st.session_state.get(k, "")
@@ -482,6 +464,12 @@ def compute_mrc_ss(mrc_keys_in: list[str]) -> tuple[bool, int | None]:
             return (False, None)
         values.append(iv)
     return (True, sum(values))
+
+# =========================================================
+# IDENTIFICAÇÃO
+# =========================================================
+st.markdown("**Identificação:**")
+_ = text_area_lines(label="", lines=1, key="id_texto", placeholder="")
 
 # =========================================================
 # 1) História clínica
@@ -551,17 +539,9 @@ tratamento_atual = st.radio(
 )
 
 if tratamento_atual == "em uso de tratamento medicamentoso":
-    _ = inline_label_input(
-        "há quanto tempo",
-        key="trat_em_uso_tempo",
-        placeholder="Ex.: desde jan/2021",
-    )
+    _ = inline_label_input("há quanto tempo", key="trat_em_uso_tempo", placeholder="Ex.: desde jan/2021")
 elif tratamento_atual == "sem tratamento medicamentoso":
-    _ = inline_label_input(
-        "há quanto tempo",
-        key="trat_sem_tempo",
-        placeholder="Ex.: desde jan/2021",
-    )
+    _ = inline_label_input("há quanto tempo", key="trat_sem_tempo", placeholder="Ex.: desde jan/2021")
 
 st.markdown("**Histórico de medicamentos modificadores de doença/imunossupressores**")
 _ = text_area_lines(
@@ -575,12 +555,7 @@ _ = text_area_lines(
 )
 
 st.markdown("**Outros medicamentos**")
-_ = text_area_lines(
-    label="",
-    lines=5,
-    key="outros_meds_texto",
-    placeholder="",
-)
+_ = text_area_lines(label="", lines=5, key="outros_meds_texto", placeholder="")
 
 st.checkbox("Paciente transplantado hepático", key="paciente_transplantado")
 
@@ -592,28 +567,16 @@ st.markdown("**Controle atual:**")
 
 controle_atual = st.radio(
     "",
-    options=[
-        "estável ou melhorando",
-        "piorando",
-    ],
+    options=["estável ou melhorando", "piorando"],
     index=None,
     key="controle_atual_radio",
 )
 
 if controle_atual == "estável ou melhorando":
-    _ = inline_label_input(
-        "há quanto tempo",
-        key="evo_estavel_tempo",
-        placeholder="Ex.: desde jan/2021",
-    )
+    _ = inline_label_input("há quanto tempo", key="evo_estavel_tempo", placeholder="Ex.: desde jan/2021")
 
 st.markdown("**Descrição da evolução:**")
-_ = text_area_lines(
-    label="",
-    lines=5,
-    key="evo_descricao_texto",
-    placeholder="",
-)
+_ = text_area_lines(label="", lines=5, key="evo_descricao_texto", placeholder="")
 
 # =========================================================
 # INCAT + PND + MRC-SS display
@@ -629,7 +592,6 @@ def ll_to_pnd(ll_value: int) -> str:
         return "PND IIIb"
     return "PND IV"
 
-# state init
 st.session_state.setdefault("incat_open", False)
 st.session_state.setdefault("incat_ul", 0)
 st.session_state.setdefault("incat_ll", 0)
@@ -660,13 +622,8 @@ with c_right:
         if str(st.session_state.get("mrc_ss_total", "")).strip() != ""
         else "Calculada automaticamente, conforme exame físico"
     )
-    st.text_input(
-        "Escala MRC-SS",
-        value=mrc_display_value,
-        disabled=True,
-    )
+    st.text_input("Escala MRC-SS", value=mrc_display_value, disabled=True)
 
-# Panel INCAT/PND
 if st.session_state["incat_open"]:
     st.markdown("#### Escala INCAT")
 
@@ -686,14 +643,11 @@ if st.session_state["incat_open"]:
         5: "5 – Incapacidade de usar qualquer braço para qualquer movimento com finalidade.",
     }
 
-    if st.session_state["incat_ul"] not in ul_options:
-        st.session_state["incat_ul"] = 0
-
     st.session_state["incat_ul"] = st.radio(
         "",
         options=list(ul_options.keys()),
         format_func=lambda k: ul_options[k],
-        index=list(ul_options.keys()).index(st.session_state["incat_ul"]),
+        index=list(ul_options.keys()).index(st.session_state.get("incat_ul", 0)),
         key="radio_incat_ul",
     )
 
@@ -708,14 +662,11 @@ if st.session_state["incat_open"]:
         5: "5 – Restrito à cadeira de rodas, incapaz de ficar em pé ou andar, ou apenas alguns passos mesmo com ajuda.",
     }
 
-    if st.session_state["incat_ll"] not in ll_options:
-        st.session_state["incat_ll"] = 0
-
     st.session_state["incat_ll"] = st.radio(
         "",
         options=list(ll_options.keys()),
         format_func=lambda k: ll_options[k],
-        index=list(ll_options.keys()).index(st.session_state["incat_ll"]),
+        index=list(ll_options.keys()).index(st.session_state.get("incat_ll", 0)),
         key="radio_incat_ll",
     )
 
@@ -740,12 +691,7 @@ if st.session_state["incat_open"]:
             st.rerun()
 
 st.markdown("**Outras escalas e métricas de seguimento**")
-_ = text_area_lines(
-    label="",
-    lines=5,
-    key="outras_escalas_seguimento",
-    placeholder="NIS, dinamometria, tempo de marcha, TUG, etc.",
-)
+_ = text_area_lines("", 5, "outras_escalas_seguimento", placeholder="NIS, dinamometria, tempo de marcha, TUG, etc.")
 
 # =========================================================
 # 6) Exame físico neurológico
@@ -753,9 +699,9 @@ _ = text_area_lines(
 st.subheader("Exame físico neurológico")
 
 _ = text_area_lines(
-    label="",
-    lines=5,
-    key="exame_fisico_neuro_texto",
+    "",
+    5,
+    "exame_fisico_neuro_texto",
     placeholder="Força, tônus, reflexo, equilíbrio, sensibilidade, nervos cranianos, alterações autonômicas, cognição",
 )
 
@@ -801,23 +747,22 @@ with bcalc2:
         st.session_state["mrc_ss_total"] = ""
         st.rerun()
 
+# (Opcional, mas mantém compatibilidade com export/import)
+st.markdown("**Deformidades osteoesqueléticas e exame clínico geral:**")
+_ = text_area_lines("", 3, "deformidades_osteo_texto", placeholder="")
+
 # =========================================================
 # Exames complementares
 # =========================================================
 st.subheader("Exames complementares")
-
 st.markdown("**ENMG**")
 _ = text_area_lines("", 3, "exames_enmg", placeholder="")
-
 st.markdown("**Líquor**")
 _ = text_area_lines("", 3, "exames_liquor", placeholder="")
-
 st.markdown("**USG nervos**")
 _ = text_area_lines("", 3, "exames_usg_nervos", placeholder="")
-
 st.markdown("**Biópsia**")
 _ = text_area_lines("", 3, "exames_biopsia", placeholder="")
-
 st.markdown("**Demais exames**")
 _ = text_area_lines(
     "",
@@ -849,24 +794,7 @@ dx_options = [
     "Outros diagnósticos (neurônio motor, junção e músculo)",
     "Diagnóstico indefinido",
 ]
-
 dx_categoria = st.radio("", options=dx_options, key="radio_dx_categoria")
-
-if dx_categoria == "Outras neuropatias adquiridas (nutricional, endocrinológica, infecciosa, tóxica, etc.)":
-    with st.expander("Detalhar (Outras neuropatias adquiridas)", expanded=True):
-        st.text_input(
-            "Especifique:",
-            key="dx_outras_adquiridas",
-            placeholder="Ex.: neuropatia alcoólica, B12, hipotireoidismo, HIV, quimioterapia, etc.",
-        )
-
-if dx_categoria == "Outros diagnósticos (neurônio motor, junção e músculo)":
-    with st.expander("Detalhar (Outros diagnósticos)", expanded=True):
-        st.text_input(
-            "Especifique:",
-            key="dx_outros_diagnosticos",
-            placeholder="Ex.: ELA, miastenia, miopatia inflamatória, etc.",
-        )
 
 if dx_categoria == "Neuropatia genética":
     with st.expander("Detalhar (Neuropatia genética)", expanded=True):
@@ -882,6 +810,22 @@ if dx_categoria == "Neuropatia imunomediada":
         if dx_imuno_choice == "Outro":
             st.text_input("Especifique", key="dx_imuno_outro", placeholder="Ex.: anti-MAG, AMAN/AMSAN, paraneoplásica, etc.")
 
+# ✅ SUGESTÃO 1 (das últimas mensagens): abrir "Especifique" para essas duas categorias
+if dx_categoria == "Outras neuropatias adquiridas (nutricional, endocrinológica, infecciosa, tóxica, etc.)":
+    st.text_input(
+        "Especifique:",
+        key="dx_outras_adquiridas",
+        placeholder="Ex.: neuropatia alcoólica / hipotireoidismo / B12 / HIV / quimioterapia / etc.",
+    )
+
+if dx_categoria == "Outros diagnósticos (neurônio motor, junção e músculo)":
+    st.text_input(
+        "Especifique:",
+        key="dx_outros_diagnosticos",
+        placeholder="Ex.: ELA / Miastenia / Miopatia / Doença do neurônio motor / etc.",
+    )
+
+# Summary
 summary = dx_categoria
 if dx_categoria == "Neuropatia genética":
     choice = st.session_state.get("dx_genetica_choice", "")
@@ -899,6 +843,16 @@ if dx_categoria == "Neuropatia imunomediada":
     elif choice:
         summary += f" | Subtipo: {choice}"
 
+if dx_categoria == "Outras neuropatias adquiridas (nutricional, endocrinológica, infecciosa, tóxica, etc.)":
+    extra = st.session_state.get("dx_outras_adquiridas", "").strip()
+    if extra:
+        summary += f" | Especifique: {extra}"
+
+if dx_categoria == "Outros diagnósticos (neurônio motor, junção e músculo)":
+    extra = st.session_state.get("dx_outros_diagnosticos", "").strip()
+    if extra:
+        summary += f" | Especifique: {extra}"
+
 st.caption(summary)
 
 # =========================================================
@@ -914,22 +868,13 @@ def build_export_text(include_all: bool) -> str:
     parts = []
 
     if include_all:
-        # ✅ Identificação + História clínica (no mesmo bloco)
-        hc_lines = []
-        ident = _get("Id")
-        if ident:
-            hc_lines.append("Identificação:\n" + ident)
+        # ✅ SUGESTÃO 2 (das últimas mensagens): exportar também a identificação
+        parts.append(_section("IDENTIFICAÇÃO", _get("id_texto")))
 
-        idade_ini = _get("idade_inicio_sintomas")
-        if idade_ini:
-            hc_lines.append(f"Idade ao início dos sintomas: {idade_ini}")
-
-        hma = _get("historia_clinica_texto")
-        if hma:
-            hc_lines.append(hma)
-
-        parts.append(_section("HISTÓRIA CLÍNICA", "\n".join([x for x in hc_lines if x.strip()])))
-
+        parts.append(_section(
+            "HISTÓRIA CLÍNICA",
+            f"Idade ao início dos sintomas: {_get('idade_inicio_sintomas')}\n{_get('historia_clinica_texto')}"
+        ))
         parts.append(_section("ANTECEDENTES PATOLÓGICOS", _get("antecedentes_patologicos_texto")))
 
         hf_txt = _get("historia_familiar_texto")
@@ -1034,7 +979,6 @@ def build_export_text(include_all: bool) -> str:
         exames_lines.append("Demais exames: " + _get("exames_demais"))
     parts.append(_section("EXAMES COMPLEMENTARES", "\n".join(exames_lines)))
 
-    # Impressão e discussão
     parts.append(_section("IMPRESSÃO E DISCUSSÃO", _get("impressao_discussao")))
 
     # Diagnóstico
@@ -1057,6 +1001,7 @@ def build_export_text(include_all: bool) -> str:
         if sub:
             dx_lines.append(f"Subtipo: {sub}")
 
+    # ✅ exporta o "Especifique" dessas duas categorias também
     if dx == "Outras neuropatias adquiridas (nutricional, endocrinológica, infecciosa, tóxica, etc.)":
         extra = _get("dx_outras_adquiridas")
         if extra:
@@ -1068,8 +1013,6 @@ def build_export_text(include_all: bool) -> str:
             dx_lines.append(f"Especifique: {extra}")
 
     parts.append(_section("DIAGNÓSTICO / HIPÓTESE DIAGNÓSTICA", "\n".join(dx_lines)))
-
-    # Conduta
     parts.append(_section("CONDUTA", _get("conduta")))
 
     cleaned = [p for p in parts if p.strip()]
@@ -1130,7 +1073,7 @@ if export_text:
     )
 
 # =========================================================
-# IMPORTAR PARA O FORMULÁRIO (NOVO)
+# IMPORTAR PARA O FORMULÁRIO
 # =========================================================
 st.markdown("---")
 st.subheader("Importar para o formulário")
