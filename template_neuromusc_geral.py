@@ -371,7 +371,7 @@ def build_forca_summary() -> str:
     add_bilat("Flexores profundos dos dedos", "mrc_fpd_D", "mrc_fpd_E")
     add_bilat("Abdução dos dedos", "mrc_abd_dedos_D", "mrc_abd_dedos_E")
     add_bilat("Oponência do polegar", "mrc_op_polegar_D", "mrc_op_polegar_E")
-    add_bilat("Oponência do dedo mínimo", "mrc_op_minimo_D", "mrc_op_minimo_E")
+    add_bilat("Abdutor do dedo mínimo", "mrc_op_minimo_D", "mrc_op_minimo_E")
 
     # Lower
     add_bilat("Flexores de quadril", "mrc_flex_quadril_D", "mrc_flex_quadril_E")
@@ -714,7 +714,7 @@ def _import_from_full_export(text: str) -> tuple[bool, str]:
                 "Flexores profundos dos dedos": ("mrc_fpd_D", "mrc_fpd_E"),
                 "Abdução dos dedos": ("mrc_abd_dedos_D", "mrc_abd_dedos_E"),
                 "Oponência do polegar": ("mrc_op_polegar_D", "mrc_op_polegar_E"),
-                "Oponência do dedo mínimo": ("mrc_op_minimo_D", "mrc_op_minimo_E"),
+                "Abdutor do dedo mínimo": ("mrc_op_minimo_D", "mrc_op_minimo_E"),
                 "Flexores de quadril": ("mrc_flex_quadril_D", "mrc_flex_quadril_E"),
                 "Extensores do quadril": ("mrc_ext_quadril_D", "mrc_ext_quadril_E"),
                 "Abdutores do quadril": ("mrc_abd_quadril_D", "mrc_abd_quadril_E"),
@@ -1169,7 +1169,7 @@ if st.session_state.get("forca_open", False):
     _force_row_bilateral("Flexores profundos dos dedos", "mrc_fpd_D", "mrc_fpd_E")
     _force_row_bilateral("Abdução dos dedos", "mrc_abd_dedos_D", "mrc_abd_dedos_E")
     _force_row_bilateral("Oponência do polegar", "mrc_op_polegar_D", "mrc_op_polegar_E")
-    _force_row_bilateral("Oponência do dedo mínimo", "mrc_op_minimo_D", "mrc_op_minimo_E")
+    _force_row_bilateral("Abdutor do dedo mínimo", "mrc_op_minimo_D", "mrc_op_minimo_E")
 
     st.markdown("---")
     st.markdown("**Músculos dos membros inferiores:**")
