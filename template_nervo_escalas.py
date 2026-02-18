@@ -137,6 +137,160 @@ _SECTION_TITLES = [
     "CONDUTA",
 ]
 
+# =========================================================
+# NIS (defs + helpers)
+# =========================================================
+NIS_MAX_WEAKNESS = 192
+NIS_MAX_REFLEXES = 20
+NIS_MAX_SENSATION = 32
+NIS_MAX_TOTAL = 244
+
+# Weakness dropdown options (value -> display text in PT-BR)
+NIS_WEAKNESS_OPTIONS = [
+    (0.00, "normal"),
+    (1.00, "fraqueza 25%"),
+    (2.00, "fraqueza 50%"),
+    (3.00, "fraqueza 75%"),
+    (3.25, "move apenas contra a gravidade"),
+    (3.50, "move apenas com gravidade eliminada"),
+    (3.75, "contração palpável/visível, sem movimento"),
+    (4.00, "paralisia"),
+]
+NIS_WEAKNESS_VALUES = [v for v, _ in NIS_WEAKNESS_OPTIONS]
+NIS_WEAKNESS_LABEL = {v: t for v, t in NIS_WEAKNESS_OPTIONS}
+
+# Reflexes & sensation dropdown (0/1/2)
+NIS_RS_OPTIONS = [
+    (0, "normal"),
+    (1, "diminuído"),
+    (2, "ausente"),
+]
+NIS_RS_VALUES = [v for v, _ in NIS_RS_OPTIONS]
+NIS_RS_LABEL = {v: t for v, t in NIS_RS_OPTIONS}
+
+# Structure from the attached form
+NIS_WEAKNESS_ITEMS = [
+    # Nervos cranianos
+    ("Nervos cranianos", "III par (oculomotor)", "nis_cn_iii_r", "nis_cn_iii_l"),
+    ("Nervos cranianos", "VI par (abducente)", "nis_cn_vi_r", "nis_cn_vi_l"),
+    ("Nervos cranianos", "Fraqueza facial", "nis_cn_facial_r", "nis_cn_facial_l"),
+    ("Nervos cranianos", "Fraqueza de palato", "nis_cn_palato_r", "nis_cn_palato_l"),
+    ("Nervos cranianos", "Fraqueza de língua", "nis_cn_lingua_r", "nis_cn_lingua_l"),
+
+    # Fraqueza muscular (MMSS + tronco)
+    ("Fraqueza muscular", "Respiratório", "nis_mw_resp_r", "nis_mw_resp_l"),
+    ("Fraqueza muscular", "Flexão cervical", "nis_mw_pescoco_r", "nis_mw_pescoco_l"),
+    ("Fraqueza muscular", "Abdução do ombro", "nis_mw_ombro_r", "nis_mw_ombro_l"),
+    ("Fraqueza muscular", "Flexão do cotovelo", "nis_mw_cotov_flex_r", "nis_mw_cotov_flex_l"),
+    ("Fraqueza muscular", "Braquiorradial", "nis_mw_braq_r", "nis_mw_braq_l"),
+    ("Fraqueza muscular", "Extensão do cotovelo", "nis_mw_cotov_ext_r", "nis_mw_cotov_ext_l"),
+    ("Fraqueza muscular", "Flexão do punho", "nis_mw_punho_flex_r", "nis_mw_punho_flex_l"),
+    ("Fraqueza muscular", "Extensão do punho", "nis_mw_punho_ext_r", "nis_mw_punho_ext_l"),
+    ("Fraqueza muscular", "Flexão dos dedos", "nis_mw_dedos_flex_r", "nis_mw_dedos_flex_l"),
+    ("Fraqueza muscular", "Abertura/abdução dos dedos", "nis_mw_dedos_abd_r", "nis_mw_dedos_abd_l"),
+    ("Fraqueza muscular", "Abdução do polegar", "nis_mw_polegar_r", "nis_mw_polegar_l"),
+
+    # Quadril / MMII
+    ("Membros inferiores", "Flexão do quadril", "nis_hip_flex_r", "nis_hip_flex_l"),
+    ("Membros inferiores", "Extensão do quadril", "nis_hip_ext_r", "nis_hip_ext_l"),
+    ("Membros inferiores", "Flexão do joelho", "nis_knee_flex_r", "nis_knee_flex_l"),
+    ("Membros inferiores", "Extensão do joelho", "nis_knee_ext_r", "nis_knee_ext_l"),
+    ("Membros inferiores", "Dorsiflexores do tornozelo", "nis_ankle_df_r", "nis_ankle_df_l"),
+    ("Membros inferiores", "Flexores plantares do tornozelo", "nis_ankle_pf_r", "nis_ankle_pf_l"),
+    ("Membros inferiores", "Extensor dos dedos do pé", "nis_toe_ext_r", "nis_toe_ext_l"),
+    ("Membros inferiores", "Flexores dos dedos do pé", "nis_toe_flex_r", "nis_toe_flex_l"),
+]
+
+NIS_REFLEX_ITEMS = [
+    ("Reflexos", "Bíceps braquial", "nis_ref_biceps_r", "nis_ref_biceps_l"),
+    ("Reflexos", "Tríceps braquial", "nis_ref_triceps_r", "nis_ref_triceps_l"),
+    ("Reflexos", "Braquiorradial", "nis_ref_braq_r", "nis_ref_braq_l"),
+    ("Reflexos", "Quadríceps (patelar)", "nis_ref_patellar_r", "nis_ref_patellar_l"),
+    ("Reflexos", "Tríceps sural (Aquileu)", "nis_ref_achilles_r", "nis_ref_achilles_l"),
+]
+
+NIS_SENS_FINGER_ITEMS = [
+    ("Sensibilidade – dedo indicador", "Pressão tátil", "nis_sf_touch_r", "nis_sf_touch_l"),
+    ("Sensibilidade – dedo indicador", "Picada (dor)", "nis_sf_pin_r", "nis_sf_pin_l"),
+    ("Sensibilidade – dedo indicador", "Vibração", "nis_sf_vib_r", "nis_sf_vib_l"),
+    ("Sensibilidade – dedo indicador", "Posição articular", "nis_sf_jps_r", "nis_sf_jps_l"),
+]
+
+NIS_SENS_TOE_ITEMS = [
+    ("Sensibilidade – hálux", "Pressão tátil", "nis_st_touch_r", "nis_st_touch_l"),
+    ("Sensibilidade – hálux", "Picada (dor)", "nis_st_pin_r", "nis_st_pin_l"),
+    ("Sensibilidade – hálux", "Vibração", "nis_st_vib_r", "nis_st_vib_l"),
+    ("Sensibilidade – hálux", "Posição articular", "nis_st_jps_r", "nis_st_jps_l"),
+]
+
+NIS_KEYS_WEAKNESS = [k for _, _, kr, kl in NIS_WEAKNESS_ITEMS for k in (kr, kl)]
+NIS_KEYS_REFLEXES = [k for _, _, kr, kl in NIS_REFLEX_ITEMS for k in (kr, kl)]
+NIS_KEYS_SENSATION = [k for _, _, kr, kl in (NIS_SENS_FINGER_ITEMS + NIS_SENS_TOE_ITEMS) for k in (kr, kl)]
+
+def _fmt_score(x: float) -> str:
+    # keep .25/.5/.75 when present, otherwise integer-ish
+    s = f"{float(x):.2f}"
+    s = s.rstrip("0").rstrip(".")
+    return s if s else "0"
+
+def init_nis_state():
+    st.session_state.setdefault("nis_open", False)
+    st.session_state.setdefault("nis_total", "")
+
+    for k in NIS_KEYS_WEAKNESS:
+        if k not in st.session_state or st.session_state[k] not in NIS_WEAKNESS_VALUES:
+            st.session_state[k] = 0.00
+
+    for k in (NIS_KEYS_REFLEXES + NIS_KEYS_SENSATION):
+        if k not in st.session_state or st.session_state[k] not in NIS_RS_VALUES:
+            st.session_state[k] = 0
+
+def compute_nis_components() -> tuple[float, float, float, float]:
+    w = sum(float(st.session_state.get(k, 0.0)) for k in NIS_KEYS_WEAKNESS)
+    r = sum(float(st.session_state.get(k, 0.0)) for k in NIS_KEYS_REFLEXES)
+    s = sum(float(st.session_state.get(k, 0.0)) for k in NIS_KEYS_SENSATION)
+    return w, r, s, (w + r + s)
+
+def nis_row(label: str, key_r: str, key_l: str, *, kind: str):
+    # kind: "weakness" | "rs"
+    c0, c1, c2, _fill = st.columns([3.2, 1.8, 1.8, 10.0], vertical_alignment="center")
+    with c0:
+        st.markdown(f'<div class="inline-label">{label}</div>', unsafe_allow_html=True)
+    with c1:
+        if kind == "weakness":
+            st.selectbox(
+                "",
+                options=NIS_WEAKNESS_VALUES,
+                key=key_r,
+                format_func=lambda v: NIS_WEAKNESS_LABEL[v],
+                label_visibility="collapsed",
+            )
+        else:
+            st.selectbox(
+                "",
+                options=NIS_RS_VALUES,
+                key=key_r,
+                format_func=lambda v: NIS_RS_LABEL[v],
+                label_visibility="collapsed",
+            )
+    with c2:
+        if kind == "weakness":
+            st.selectbox(
+                "",
+                options=NIS_WEAKNESS_VALUES,
+                key=key_l,
+                format_func=lambda v: NIS_WEAKNESS_LABEL[v],
+                label_visibility="collapsed",
+            )
+        else:
+            st.selectbox(
+                "",
+                options=NIS_RS_VALUES,
+                key=key_l,
+                format_func=lambda v: NIS_RS_LABEL[v],
+                label_visibility="collapsed",
+            )
+
 def split_sections(text: str) -> dict[str, str]:
     text = _norm(text).strip()
     if not text:
@@ -185,9 +339,11 @@ def _reset_form_state():
         "meds_atual_previo_texto", "outros_meds_texto", "paciente_transplantado",
         # Evolução
         "controle_atual_radio", "evo_estavel_tempo", "evo_descricao_texto",
-        "incat_total", "pnd_total", "mrc_ss_total", "outras_escalas_seguimento",
+        "incat_total", "pnd_total", "mrc_ss_total", "nis_total", "outras_escalas_seguimento",
         # INCAT panel internal
         "incat_open", "incat_ul", "incat_ll", "radio_incat_ul", "radio_incat_ll",
+        # NIS panel internal
+        "nis_open",
         # Exame físico
         "exame_fisico_neuro_texto", "deformidades_osteo_texto",
         # Exames complementares
@@ -212,7 +368,9 @@ def _reset_form_state():
         "mrc_tornozelo_D", "mrc_tornozelo_E",
     ]
 
-    for k in keys_to_clear + mrc_keys_local:
+    nis_keys_local = NIS_KEYS_WEAKNESS + NIS_KEYS_REFLEXES + NIS_KEYS_SENSATION
+
+    for k in keys_to_clear + mrc_keys_local + nis_keys_local:
         st.session_state.pop(k, None)
 
 def _import_from_full_export(text: str) -> tuple[bool, str]:
@@ -308,10 +466,14 @@ def _import_from_full_export(text: str) -> tuple[bool, str]:
         desc = _extract_block(
             t,
             "Descrição da evolução:",
-            ["Escala INCAT:", "MRC-SS:", "Outras escalas e métricas:"],
+            ["NIS:", "Escala INCAT:", "MRC-SS:", "Outras escalas e métricas:"],
         )
         if desc:
             st.session_state["evo_descricao_texto"] = desc
+
+        nis = _extract_line_value(t, "NIS:")
+        if nis:
+            st.session_state["nis_total"] = nis
 
         incat = _extract_line_value(t, "Escala INCAT:")
         if incat:
@@ -579,7 +741,7 @@ st.markdown("**Descrição da evolução:**")
 _ = text_area_lines(label="", lines=5, key="evo_descricao_texto", placeholder="")
 
 # =========================================================
-# INCAT + PND + MRC-SS display
+# INCAT + PND + NIS + MRC-SS display
 # =========================================================
 def ll_to_pnd(ll_value: int) -> str:
     if ll_value == 0:
@@ -599,11 +761,18 @@ st.session_state.setdefault("incat_total", "")
 st.session_state.setdefault("pnd_total", "")
 st.session_state.setdefault("mrc_ss_total", "")
 
+# NIS state init
+init_nis_state()
+
 c_left, c_right = st.columns([2.2, 9.8], vertical_alignment="top")
 
 with c_left:
     if st.button("Escala INCAT e PND", key="btn_open_incat"):
         st.session_state["incat_open"] = True
+
+    # ✅ NIS button below INCAT/PND
+    if st.button("Escala NIS", key="btn_open_nis"):
+        st.session_state["nis_open"] = True
 
 with c_right:
     st.text_input(
@@ -617,6 +786,18 @@ with c_right:
         disabled=True,
     )
 
+    nis_placeholder = (
+        f"Calculada automaticamente (Fraqueza máx {NIS_MAX_WEAKNESS}; "
+        f"Reflexos máx {NIS_MAX_REFLEXES}; Sensibilidade máx {NIS_MAX_SENSATION}; "
+        f"Total máx {NIS_MAX_TOTAL})"
+    )
+    nis_display_value = (
+        str(st.session_state.get("nis_total", "")).strip()
+        if str(st.session_state.get("nis_total", "")).strip() != ""
+        else nis_placeholder
+    )
+    st.text_input("Escala NIS", value=nis_display_value, disabled=True)
+
     mrc_display_value = (
         str(st.session_state.get("mrc_ss_total", "")).strip()
         if str(st.session_state.get("mrc_ss_total", "")).strip() != ""
@@ -624,6 +805,9 @@ with c_right:
     )
     st.text_input("Escala MRC-SS", value=mrc_display_value, disabled=True)
 
+# --------------------------
+# INCAT PANEL
+# --------------------------
 if st.session_state["incat_open"]:
     st.markdown("#### Escala INCAT")
 
@@ -690,8 +874,87 @@ if st.session_state["incat_open"]:
             st.session_state["incat_open"] = False
             st.rerun()
 
+# --------------------------
+# ✅ NIS PANEL
+# --------------------------
+if st.session_state.get("nis_open", False):
+    st.markdown("#### Escala NIS")
+
+    # Header row
+    h0, h1, h2, _hf = st.columns([3.2, 1.8, 1.8, 10.0], vertical_alignment="center")
+    with h0:
+        st.markdown("**Item**")
+    with h1:
+        st.markdown("**Direito**")
+    with h2:
+        st.markdown("**Esquerdo**")
+
+    def render_group(title: str, items: list[tuple[str, str, str, str]], kind: str):
+        st.markdown(f"**{title}**")
+        for _grp, lbl, kr, kl in items:
+            nis_row(lbl, kr, kl, kind=kind)
+        st.markdown("---")
+
+    # Weakness groups (as in form)
+    render_group("Nervos cranianos (fraqueza)", [x for x in NIS_WEAKNESS_ITEMS if x[0] == "Nervos cranianos"], kind="weakness")
+    render_group("Fraqueza muscular", [x for x in NIS_WEAKNESS_ITEMS if x[0] == "Fraqueza muscular"], kind="weakness")
+    render_group("Membros inferiores", [x for x in NIS_WEAKNESS_ITEMS if x[0] == "Membros inferiores"], kind="weakness")
+
+    # Reflexes
+    st.markdown("**Reflexos**")
+    for _grp, lbl, kr, kl in NIS_REFLEX_ITEMS:
+        nis_row(lbl, kr, kl, kind="rs")
+    st.markdown("---")
+
+    # Sensation - finger
+    st.markdown("**Sensibilidade – dedo indicador**")
+    for _grp, lbl, kr, kl in NIS_SENS_FINGER_ITEMS:
+        nis_row(lbl, kr, kl, kind="rs")
+    st.markdown("---")
+
+    # Sensation - toe
+    st.markdown("**Sensibilidade – hálux**")
+    for _grp, lbl, kr, kl in NIS_SENS_TOE_ITEMS:
+        nis_row(lbl, kr, kl, kind="rs")
+    st.markdown("---")
+
+    # Live totals
+    w, r, s, t = compute_nis_components()
+    st.markdown(
+        f"**Prévia:** Fraqueza **{_fmt_score(w)}/{NIS_MAX_WEAKNESS}** · "
+        f"Reflexos **{_fmt_score(r)}/{NIS_MAX_REFLEXES}** · "
+        f"Sensibilidade **{_fmt_score(s)}/{NIS_MAX_SENSATION}** · "
+        f"Total **{_fmt_score(t)}/{NIS_MAX_TOTAL}**"
+    )
+
+    b1, b2, b3, _bfill = st.columns([1.4, 1.0, 1.2, 10.0], vertical_alignment="center")
+    with b1:
+        if st.button("Salvar NIS", key="btn_save_nis", type="primary"):
+            w, r, s, t = compute_nis_components()
+            st.session_state["nis_total"] = (
+                f"Fraqueza ({_fmt_score(w)}/{NIS_MAX_WEAKNESS}) + "
+                f"Reflexos ({_fmt_score(r)}/{NIS_MAX_REFLEXES}) + "
+                f"Sensibilidade ({_fmt_score(s)}/{NIS_MAX_SENSATION}) = "
+                f"Total ({_fmt_score(t)}/{NIS_MAX_TOTAL})"
+            )
+            st.session_state["nis_open"] = False
+            st.rerun()
+    with b2:
+        if st.button("Cancelar", key="btn_cancel_nis"):
+            st.session_state["nis_open"] = False
+            st.rerun()
+    with b3:
+        if st.button("Limpar NIS", key="btn_clear_nis"):
+            # reset all NIS fields to zero + clear summary
+            for k in NIS_KEYS_WEAKNESS:
+                st.session_state[k] = 0.00
+            for k in (NIS_KEYS_REFLEXES + NIS_KEYS_SENSATION):
+                st.session_state[k] = 0
+            st.session_state["nis_total"] = ""
+            st.rerun()
+
 st.markdown("**Outras escalas e métricas de seguimento**")
-_ = text_area_lines("", 5, "outras_escalas_seguimento", placeholder="NIS, dinamometria, tempo de marcha, TUG, etc.")
+_ = text_area_lines("", 5, "outras_escalas_seguimento", placeholder="Dinamometria, tempo de marcha, TUG, etc.")
 
 # =========================================================
 # 6) Exame físico neurológico
@@ -747,7 +1010,6 @@ with bcalc2:
         st.session_state["mrc_ss_total"] = ""
         st.rerun()
 
-# (Opcional, mas mantém compatibilidade com export/import)
 st.markdown("**Deformidades osteoesqueléticas e exame clínico geral:**")
 _ = text_area_lines("", 3, "deformidades_osteo_texto", placeholder="")
 
@@ -810,7 +1072,6 @@ if dx_categoria == "Neuropatia imunomediada":
         if dx_imuno_choice == "Outro":
             st.text_input("Especifique", key="dx_imuno_outro", placeholder="Ex.: anti-MAG, AMAN/AMSAN, paraneoplásica, etc.")
 
-# ✅ SUGESTÃO 1 (das últimas mensagens): abrir "Especifique" para essas duas categorias
 if dx_categoria == "Outras neuropatias adquiridas (nutricional, endocrinológica, infecciosa, tóxica, etc.)":
     st.text_input(
         "Especifique:",
@@ -868,7 +1129,6 @@ def build_export_text(include_all: bool) -> str:
     parts = []
 
     if include_all:
-        # ✅ SUGESTÃO 2 (das últimas mensagens): exportar também a identificação
         parts.append(_section("IDENTIFICAÇÃO", _get("id_texto")))
 
         parts.append(_section(
@@ -920,6 +1180,10 @@ def build_export_text(include_all: bool) -> str:
     desc = _get("evo_descricao_texto")
     if desc:
         evo_lines.append("Descrição da evolução:\n" + desc)
+
+    nis = _get("nis_total")
+    if nis:
+        evo_lines.append(f"NIS: {nis}")
 
     incat = _get("incat_total")
     if incat:
@@ -1001,7 +1265,6 @@ def build_export_text(include_all: bool) -> str:
         if sub:
             dx_lines.append(f"Subtipo: {sub}")
 
-    # ✅ exporta o "Especifique" dessas duas categorias também
     if dx == "Outras neuropatias adquiridas (nutricional, endocrinológica, infecciosa, tóxica, etc.)":
         extra = _get("dx_outras_adquiridas")
         if extra:
