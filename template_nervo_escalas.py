@@ -1098,22 +1098,39 @@ mrc_row("Dorsiflexão do tornozelo:", "mrc_tornozelo_D", "mrc_tornozelo_E")
 complete, total = compute_mrc_ss(mrc_keys)
 
 # =========================================================
-# MRC FULL DIALOG
+# MRC FULL DIALOG (FIX: use temporary keys to avoid duplicates)
 # =========================================================
 dialog_decorator = getattr(st, "dialog", None) or getattr(st, "experimental_dialog")
 
-def _mrc_all_row(label: str, key_d: str, key_e: str):
+def _dlg_key(k: str) -> str:
+    return f"dlg_{k}"
+
+def _mrc_all_row_dialog(label: str, main_key_d: str, main_key_e: str):
+    """Row inside dialog using dlg_* keys (avoids duplicate keys with main page)."""
     c0, c1, c2, _fill = st.columns([3.2, 1.4, 1.4, 10.0], vertical_alignment="center")
     with c0:
         st.markdown(f'<div class="inline-label">{label}</div>', unsafe_allow_html=True)
     with c1:
-        small_mrc_box(key_d)
+        st.text_input(
+            "Valor (0–5)",
+            key=_dlg_key(main_key_d),
+            placeholder="0-5",
+            label_visibility="collapsed",
+            max_chars=1,
+        )
     with c2:
-        small_mrc_box(key_e)
+        st.text_input(
+            "Valor (0–5)",
+            key=_dlg_key(main_key_e),
+            placeholder="0-5",
+            label_visibility="collapsed",
+            max_chars=1,
+        )
 
 @dialog_decorator("MRC – todos os músculos")
 def mrc_all_dialog():
     st.markdown("**Membros superiores**")
+
     hh0, hh1, hh2, _ = st.columns([3.2, 1.4, 1.4, 10.0], vertical_alignment="center")
     with hh0:
         st.markdown("**Grupo muscular**")
@@ -1123,10 +1140,11 @@ def mrc_all_dialog():
         st.markdown("**Esquerdo**")
 
     for lbl, kd, ke in MRC_ALL_ITEMS_UPPER:
-        _mrc_all_row(lbl + ":", kd, ke)
+        _mrc_all_row_dialog(lbl + ":", kd, ke)
 
     st.markdown("---")
     st.markdown("**Membros inferiores**")
+
     hh0, hh1, hh2, _ = st.columns([3.2, 1.4, 1.4, 10.0], vertical_alignment="center")
     with hh0:
         st.markdown("**Grupo muscular**")
@@ -1136,52 +1154,64 @@ def mrc_all_dialog():
         st.markdown("**Esquerdo**")
 
     for lbl, kd, ke in MRC_ALL_ITEMS_LOWER:
-        _mrc_all_row(lbl + ":", kd, ke)
+        _mrc_all_row_dialog(lbl + ":", kd, ke)
 
-    ok_mrc, tot_mrc = compute_mrc_ss(mrc_keys)
+    # Preview MRC-SS computed from dlg_* keys
+    dlg_mrc_keys = [_dlg_key(k) for k in mrc_keys]  # mrc_keys = 12 classic keys used for MRC-SS
+    ok_mrc, tot_mrc = compute_mrc_ss(dlg_mrc_keys)
 
     st.markdown("---")
     if ok_mrc and tot_mrc is not None:
         st.success(f"MRC-SS (prévia): {tot_mrc}")
     else:
-        st.info("MRC-SS será calculado automaticamente ao salvar, se os 12 campos do MRC-SS estiverem preenchidos (0–5).")
+        st.info("MRC-SS será calculado ao salvar, se os 12 campos do MRC-SS estiverem preenchidos (0–5).")
 
     b1, b2, b3 = st.columns([1.4, 1.0, 1.2], vertical_alignment="center")
     with b1:
         if st.button("Salvar", type="primary", key="btn_mrc_all_save"):
+            # Copy dlg_* -> main keys
+            for k in MRC_ALL_KEYS:
+                st.session_state[k] = st.session_state.get(_dlg_key(k), "")
+
             ok2, tot2 = compute_mrc_ss(mrc_keys)
             if ok2 and tot2 is not None:
                 st.session_state["mrc_ss_total"] = str(tot2)
+            else:
+                # keep as is (or clear) if incomplete
+                st.session_state["mrc_ss_total"] = st.session_state.get("mrc_ss_total", "")
+
+            # optional: clear dialog state
+            for k in MRC_ALL_KEYS:
+                st.session_state.pop(_dlg_key(k), None)
+
             st.rerun()
     with b2:
         if st.button("Cancelar", key="btn_mrc_all_cancel"):
+            # optional: clear dialog state
+            for k in MRC_ALL_KEYS:
+                st.session_state.pop(_dlg_key(k), None)
             st.rerun()
     with b3:
-        if st.button("Limpar todos", key="btn_mrc_all_clear"):
+        if st.button("Limpar todos (popup)", key="btn_mrc_all_clear"):
+            # clear only dialog fields
             for k in MRC_ALL_KEYS:
-                st.session_state[k] = ""
-            st.session_state["mrc_ss_total"] = ""
+                st.session_state[_dlg_key(k)] = ""
             st.rerun()
 
-bcalc1, bcalc2, bcalc3, _fill = st.columns([2.2, 2.2, 2.4, 10.0], vertical_alignment="center")
-with bcalc1:
-    if complete:
-        if st.button("Calcular MRC-SS", key="btn_calc_mrcss", type="primary"):
-            st.session_state["mrc_ss_total"] = str(total)
-            st.success(f"MRC-SS calculado: {total}")
-            st.rerun()
-    else:
-        st.caption("Preencha todos os 12 campos (0–5) para habilitar o cálculo do MRC-SS.")
-with bcalc2:
-    if st.button("Limpar MRC-SS", key="btn_clear_mrcss"):
-        st.session_state["mrc_ss_total"] = ""
-        st.rerun()
-with bcalc3:
-    if st.button("Todos os músculos", key="btn_open_mrc_all"):
-        mrc_all_dialog()
+# =========================================================
+# Button "Todos os músculos" (sync main -> dialog keys, then open dialog)
+# =========================================================
+def open_mrc_all_dialog():
+    # sync current main values into dialog inputs
+    for k in MRC_ALL_KEYS:
+        st.session_state[_dlg_key(k)] = st.session_state.get(k, "")
+    mrc_all_dialog()
 
-st.markdown("**Deformidades osteoesqueléticas e exame clínico geral:**")
-_ = text_area_lines("", 3, "deformidades_osteo_texto", placeholder="")
+# --- In your existing buttons row, replace the previous open call with this:
+# with bcalc3:
+#     if st.button("Todos os músculos", key="btn_open_mrc_all"):
+#         open_mrc_all_dialog()
+
 
 # =========================================================
 # Exames complementares
