@@ -1141,8 +1141,11 @@ def _mrc_all_row_dialog(label: str, main_key_d: str, main_key_e: str):
 
     with c0:
         # permite quebrar linha no dialog (CSS acima já força white-space: normal)
-        st.markdown(f'<div class="inline-label">{label}</div>', unsafe_allow_html=True)
-
+    st.markdown(
+        f'<div class="inline-label">{label}</div>',
+        unsafe_allow_html=True
+    )
+    
     with c1:
         st.text_input(
             "",
@@ -1175,7 +1178,7 @@ if dialog_decorator is not None:
             st.markdown("**Esquerdo**")
 
         for lbl, kd, ke in MRC_ALL_ITEMS_UPPER:
-            lbl_show = f"**{lbl}:**" if lbl in MRC_BOLD_LABELS else f"{lbl}:"
+            lbl_show = f"<b>{lbl}:</b>" if lbl in MRC_BOLD_LABELS else f"{lbl}:"
             _mrc_all_row_dialog(lbl_show, kd, ke)
 
         st.markdown("---")
