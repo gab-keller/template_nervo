@@ -1,4 +1,4 @@
-dialog_decoratorimport re
+import re
 import streamlit as st
 
 st.set_page_config(page_title="Template nervo periférico", layout="wide")
