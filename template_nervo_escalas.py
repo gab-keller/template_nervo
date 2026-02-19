@@ -1,4 +1,4 @@
-import re
+dialog_decoratorimport re
 import streamlit as st
 
 st.set_page_config(page_title="Template nervo periférico", layout="wide")
@@ -1125,6 +1125,15 @@ mrc_row("Dorsiflexão do tornozelo:", "mrc_tornozelo_D", "mrc_tornozelo_E")
 dialog_decorator = getattr(st, "dialog", None)
 if dialog_decorator is None:
     dialog_decorator = getattr(st, "experimental_dialog", None)
+    
+MRC_BOLD_LABELS = {
+    "Abdução do ombro",
+    "Flexores do cotovelo",      # (no popup você usa "Flexores do cotovelo")
+    "Extensores de punho",       # (no popup você usa "Extensores de punho")
+    "Flexores de quadril",
+    "Extensores do joelho",
+    "Dorsiflexão do pé",         # (no popup você usa "Dorsiflexão do pé")
+}
 
 def _mrc_all_row_dialog(label: str, main_key_d: str, main_key_e: str):
     # SEM coluna filler: no dialog ela destrói a largura útil
@@ -1166,7 +1175,8 @@ if dialog_decorator is not None:
             st.markdown("**Esquerdo**")
 
         for lbl, kd, ke in MRC_ALL_ITEMS_UPPER:
-            _mrc_all_row_dialog(lbl + ":", kd, ke)
+            lbl_show = f"**{lbl}:**" if lbl in MRC_BOLD_LABELS else f"{lbl}:"
+            _mrc_all_row_dialog(lbl_show, kd, ke)
 
         st.markdown("---")
         st.markdown("**Membros inferiores**")
@@ -1180,7 +1190,8 @@ if dialog_decorator is not None:
             st.markdown("**Esquerdo**")
 
         for lbl, kd, ke in MRC_ALL_ITEMS_LOWER:
-            _mrc_all_row_dialog(lbl + ":", kd, ke)
+            lbl_show = f"**{lbl}:**" if lbl in MRC_BOLD_LABELS else f"{lbl}:"
+            _mrc_all_row_dialog(lbl_show, kd, ke)
 
         dlg_mrc_keys = [_dlg_key(k) for k in MRC_SS_KEYS]
         ok_mrc, tot_mrc = compute_mrc_ss(dlg_mrc_keys)
