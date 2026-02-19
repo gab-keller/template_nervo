@@ -1141,10 +1141,10 @@ def _mrc_all_row_dialog(label: str, main_key_d: str, main_key_e: str):
 
     with c0:
         # permite quebrar linha no dialog (CSS acima já força white-space: normal)
-    st.markdown(
-        f'<div class="inline-label">{label}</div>',
-        unsafe_allow_html=True
-    )
+        st.markdown(
+            f'<div class="inline-label">{label}</div>',
+            unsafe_allow_html=True
+        )
     
     with c1:
         st.text_input(
