@@ -72,6 +72,34 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
+/* ==========================
+   FIX: st.dialog layout (MRC todos os músculos)
+   ========================== */
+
+/* tenta cobrir diferentes versões do Streamlit */
+div[role="dialog"], div[data-testid="stDialog"]{
+  width: min(1100px, 96vw) !important;
+}
+
+/* dentro do dialog: não usar nowrap (evita label invadir os inputs) */
+div[role="dialog"] .inline-label,
+div[data-testid="stDialog"] .inline-label{
+  white-space: normal !important;
+  padding-top: 0.15rem !important;
+}
+
+/* dentro do dialog: desliga seus "tighteners" que podem colapsar spacing */
+div[role="dialog"] div[data-testid="stTextInput"],
+div[data-testid="stDialog"] div[data-testid="stTextInput"]{
+  margin-top: 0rem !important;
+}
+
+div[role="dialog"] div[data-testid="stVerticalBlock"] > div[data-testid="stElementContainer"],
+div[data-testid="stDialog"] div[data-testid="stVerticalBlock"] > div[data-testid="stElementContainer"]{
+  margin-bottom: 0.55rem !important;
+}
+
+
 # =========================================================
 # HELPERS (UI)
 # =========================================================
@@ -1096,20 +1124,25 @@ if dialog_decorator is None:
     dialog_decorator = getattr(st, "experimental_dialog", None)
 
 def _mrc_all_row_dialog(label: str, main_key_d: str, main_key_e: str):
-    c0, c1, c2, _fill = st.columns([3.2, 1.4, 1.4, 10.0], vertical_alignment="center")
+    # SEM coluna filler: no dialog ela destrói a largura útil
+    c0, c1, c2 = st.columns([6.0, 2.0, 2.0], vertical_alignment="center")
+
     with c0:
+        # permite quebrar linha no dialog (CSS acima já força white-space: normal)
         st.markdown(f'<div class="inline-label">{label}</div>', unsafe_allow_html=True)
+
     with c1:
         st.text_input(
-            "Valor (0–5)",
+            "",
             key=_dlg_key(main_key_d),
             placeholder="0-5",
             label_visibility="collapsed",
             max_chars=1,
         )
+
     with c2:
         st.text_input(
-            "Valor (0–5)",
+            "",
             key=_dlg_key(main_key_e),
             placeholder="0-5",
             label_visibility="collapsed",
@@ -1121,7 +1154,7 @@ if dialog_decorator is not None:
     def mrc_all_dialog():
         st.markdown("**Membros superiores**")
 
-        hh0, hh1, hh2, _ = st.columns([3.2, 1.4, 1.4, 10.0], vertical_alignment="center")
+        hh0, hh1, hh2 = st.columns([6.0, 2.0, 2.0], vertical_alignment="center")
         with hh0:
             st.markdown("**Grupo muscular**")
         with hh1:
