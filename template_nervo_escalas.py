@@ -1317,14 +1317,14 @@ if dx_categoria == "Neuropatia genética":
         gen_options = ["TTR", "PPOX", "HMBS", "CPOX", "PMP22", "MPZ", "GJB1", "MFN2", "Outro"]
         dx_genetica_choice = st.radio("Gene:", options=gen_options, key="dx_genetica_choice")
         if dx_genetica_choice == "Outro":
-            st.text_input("Especifique:", key="dx_genetica_outro", placeholder="Ex.: GDAP1, TTR, etc.")
+            st.text_input("Especifique:", key="dx_genetica_outro", placeholder="Ex.: GDAP1, etc.")
 
 if dx_categoria == "Neuropatia imunomediada":
     with st.expander("Detalhar (Neuropatia imunomediada)", expanded=True):
         imuno_options = ["CIDP", "Vasculite", "Ganglionopatia", "Guillain-Barré", "Neuropatia motora multifocal", "Outro"]
         dx_imuno_choice = st.radio("Especifique:", options=imuno_options, key="dx_imuno_choice")
         if dx_imuno_choice == "Outro":
-            st.text_input("Especifique", key="dx_imuno_outro", placeholder="Ex.: anti-MAG, AMAN/AMSAN, paraneoplásica, etc.")
+            st.text_input("Especifique", key="dx_imuno_outro", placeholder="Ex.: anti-MAG, paraneoplásica, etc.")
 
 if dx_categoria == "Outras neuropatias adquiridas (nutricional, endocrinológica, infecciosa, tóxica, etc.)":
     st.text_input(
