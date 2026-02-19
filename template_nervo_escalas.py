@@ -59,6 +59,34 @@ st.markdown(
       label, .stTextArea label, .stRadio label, .stCheckbox label {
         margin-bottom: 0.15rem !important;
       }
+
+    /* ==========================
+       FIX: st.dialog layout (MRC todos os músculos)
+       ========================== */
+
+    /* tenta cobrir diferentes versões do Streamlit */
+    div[role="dialog"], div[data-testid="stDialog"]{
+      width: min(1100px, 96vw) !important;
+    }
+    
+    /* dentro do dialog: não usar nowrap (evita label invadir os inputs) */
+    div[role="dialog"] .inline-label,
+    div[data-testid="stDialog"] .inline-label{
+      white-space: normal !important;
+      padding-top: 0.15rem !important;
+    }
+    
+    /* dentro do dialog: desliga seus "tighteners" que podem colapsar spacing */
+    div[role="dialog"] div[data-testid="stTextInput"],
+    div[data-testid="stDialog"] div[data-testid="stTextInput"]{
+      margin-top: 0rem !important;
+    }
+    
+    div[role="dialog"] div[data-testid="stVerticalBlock"] > div[data-testid="stElementContainer"],
+    div[data-testid="stDialog"] div[data-testid="stVerticalBlock"] > div[data-testid="stElementContainer"]{
+      margin-bottom: 0.55rem !important;
+    }
+      
     </style>
     """,
     unsafe_allow_html=True,
@@ -72,32 +100,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-/* ==========================
-   FIX: st.dialog layout (MRC todos os músculos)
-   ========================== */
 
-/* tenta cobrir diferentes versões do Streamlit */
-div[role="dialog"], div[data-testid="stDialog"]{
-  width: min(1100px, 96vw) !important;
-}
-
-/* dentro do dialog: não usar nowrap (evita label invadir os inputs) */
-div[role="dialog"] .inline-label,
-div[data-testid="stDialog"] .inline-label{
-  white-space: normal !important;
-  padding-top: 0.15rem !important;
-}
-
-/* dentro do dialog: desliga seus "tighteners" que podem colapsar spacing */
-div[role="dialog"] div[data-testid="stTextInput"],
-div[data-testid="stDialog"] div[data-testid="stTextInput"]{
-  margin-top: 0rem !important;
-}
-
-div[role="dialog"] div[data-testid="stVerticalBlock"] > div[data-testid="stElementContainer"],
-div[data-testid="stDialog"] div[data-testid="stVerticalBlock"] > div[data-testid="stElementContainer"]{
-  margin-bottom: 0.55rem !important;
-}
 
 
 # =========================================================
