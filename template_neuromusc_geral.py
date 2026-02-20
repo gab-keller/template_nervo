@@ -239,7 +239,7 @@ def _upsert_scale_line(prefix: str, new_line: str, target_key: str = "escalas"):
     kept.append(new_line.strip())
     st.session_state[target_key] = "\n".join(kept).strip()
 
-ddef _build_ibmfrs_line(total: int) -> str:
+def _build_ibmfrs_line(total: int) -> str:
     mm_yyyy = _mm_yyyy_now()
     parts = []
     for it in IBM_FRS_ITEMS_PT:
