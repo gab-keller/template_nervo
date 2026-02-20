@@ -93,6 +93,148 @@ DX_NOSO_OPTIONS = [
     "Outros",
 ]
 
+# =========================================================
+# IBM-FRS (PT-BR) — conforme PDF anexo
+# =========================================================
+
+IBM_FRS_ITEMS_PT = [
+    {
+        "n": 1,
+        "title": "Deglutição",
+        "key": "ibmfrs_swallow",
+        "desc": {
+            4: "Normal",
+            3: "Problemas iniciais ao comer — engasgos ocasionais",
+            2: "Mudança na consistência da dieta",
+            1: "Engasgos frequentes",
+            0: "Necessita alimentação por sonda",
+        },
+    },
+    {
+        "n": 2,
+        "title": "Escrita (mão dominante antes do início da IBM)",
+        "key": "ibmfrs_handwriting",
+        "desc": {
+            4: "Normal",
+            3: "Lenta ou “desleixada”; todas as palavras são legíveis",
+            2: "Nem todas as palavras são legíveis",
+            1: "Consegue segurar a caneta, mas é incapaz de escrever",
+            0: "Incapaz de segurar a caneta",
+        },
+    },
+    {
+        "n": 3,
+        "title": "Cortar alimentos e manusear utensílios",
+        "key": "ibmfrs_cutting",
+        "desc": {
+            4: "Normal",
+            3: "Um pouco lento e desajeitado, mas não precisa de ajuda",
+            2: "Corta a maioria dos alimentos, porém lento/desajeitado; precisa de alguma ajuda",
+            1: "Alguém precisa cortar os alimentos, mas ainda consegue se alimentar lentamente",
+            0: "Precisa ser alimentado",
+        },
+    },
+    {
+        "n": 4,
+        "title": "Tarefas motoras finas (abrir portas, usar chaves, pegar objetos pequenos)",
+        "key": "ibmfrs_fine_motor",
+        "desc": {
+            4: "Independente",
+            3: "Lento ou desajeitado para completar a tarefa",
+            2: "Independente, mas requer técnicas modificadas ou dispositivos auxiliares",
+            1: "Frequentemente requer assistência do cuidador",
+            0: "Incapaz",
+        },
+    },
+    {
+        "n": 5,
+        "title": "Vestir-se",
+        "key": "ibmfrs_dressing",
+        "desc": {
+            4: "Normal",
+            3: "Independente, mas com maior esforço ou menor eficiência",
+            2: "Independente, mas requer dispositivos auxiliares ou técnicas modificadas (velcro, camisas sem botões etc.)",
+            1: "Requer assistência do cuidador para algumas peças de roupa",
+            0: "Dependência total",
+        },
+    },
+    {
+        "n": 6,
+        "title": "Higiene (banho e toalete)",
+        "key": "ibmfrs_hygiene",
+        "desc": {
+            4: "Normal",
+            3: "Independente, mas com maior esforço ou menor atividade",
+            2: "Independente, mas requer dispositivos auxiliares (cadeira de banho, assento elevado etc.)",
+            1: "Requer assistência ocasional do cuidador",
+            0: "Completamente dependente",
+        },
+    },
+    {
+        "n": 7,
+        "title": "Virar na cama e ajustar cobertas/lençóis",
+        "key": "ibmfrs_turning_bed",
+        "desc": {
+            4: "Normal",
+            3: "Um pouco lento e desajeitado, mas não precisa de ajuda",
+            2: "Consegue virar sozinho ou ajustar lençóis, mas com grande dificuldade",
+            1: "Consegue iniciar, mas não consegue virar/ajustar lençóis sozinho",
+            0: "Incapaz ou requer assistência total",
+        },
+    },
+    {
+        "n": 8,
+        "title": "Sentar para ficar em pé (sit-to-stand)",
+        "key": "ibmfrs_sit_to_stand",
+        "desc": {
+            4: "Independente (sem uso dos braços)",
+            3: "Faz com movimentos compensatórios (inclinar para frente, balançar), mas sem usar os braços",
+            2: "Requer uso dos braços",
+            1: "Requer assistência de dispositivo ou de pessoa",
+            0: "Incapaz de ficar em pé",
+        },
+    },
+    {
+        "n": 9,
+        "title": "Marcha",
+        "key": "ibmfrs_walking",
+        "desc": {
+            4: "Normal",
+            3: "Lenta ou com leve instabilidade",
+            2: "Uso intermitente de dispositivo auxiliar (órtese AFO, bengala, andador)",
+            1: "Dependente de dispositivo auxiliar",
+            0: "Dependente de cadeira de rodas",
+        },
+    },
+    {
+        "n": 10,
+        "title": "Subir escadas",
+        "key": "ibmfrs_stairs",
+        "desc": {
+            4: "Normal",
+            3: "Lento, com hesitação ou maior esforço; usa corrimão intermitentemente",
+            2: "Dependente do corrimão",
+            1: "Dependente do corrimão e de suporte adicional (bengala ou pessoa)",
+            0: "Não consegue subir escadas",
+        },
+    },
+]
+
+def _upsert_scale_line(prefix: str, new_line: str, target_key: str = "escalas"):
+    """Remove linhas antigas com o mesmo prefixo e adiciona a nova ao final (sem apagar outras escalas)."""
+    cur = (st.session_state.get(target_key) or "").strip()
+    lines = [ln.strip() for ln in cur.split("\n") if ln.strip()]
+    kept = [ln for ln in lines if not ln.lower().startswith(prefix.lower())]
+    kept.append(new_line.strip())
+    st.session_state[target_key] = "\n".join(kept).strip()
+
+def _build_ibmfrs_line(total: int) -> str:
+    parts = []
+    for it in IBM_FRS_ITEMS_PT:
+        v = st.session_state.get(it["key"], 4)
+        parts.append(f"{it['title']}.{v}")
+    return "IBM-FRS: " + " / ".join(parts) + f" = {total}/40"
+
 # ---------- IMPORT PARSER ----------
 _SECTION_TITLES = [
     "ANAMNESE",
@@ -402,6 +544,12 @@ st.session_state.setdefault("export_text", "")
 st.session_state.setdefault("_import_raw", "")
 st.session_state.setdefault("_do_import", False)
 
+# NOVO: Escalas + IBM-FRS modal
+st.session_state.setdefault("escalas", "")
+st.session_state.setdefault("ibmfrs_open", False)
+for it in IBM_FRS_ITEMS_PT:
+    st.session_state.setdefault(it["key"], 4)
+
 # =========================================================
 # IMPORT PARSER FUNCS
 # =========================================================
@@ -459,6 +607,7 @@ def _reset_form_state():
         "ort_inicio_idade", "ort_inicio_ano",
         "nut_inicio_idade", "nut_inicio_ano",
         "fisio_motora_freq", "fisio_resp_freq", "ambu_freq", "fono_freq", "outras_terapias",
+        "escalas",
         "neuro_geral",
         "exame_neuromuscular_especifico", "pele_clinico_geral", "osteo_dismorfismos",
         "ex_cpk", "ex_enmg", "ex_decremento_jitter", "ex_anticorpos_juncao", "ex_rm_muscular", "ex_biopsia_muscular",
@@ -475,7 +624,12 @@ def _reset_form_state():
         "ortese_mi", "ortese_ms", "colete_ortopedico",
         "nut_gtt",
         "fisio_motora_chk", "fisio_resp_chk", "ambu_chk", "fono_chk",
+        # IBM-FRS modal
+        "ibmfrs_open",
     ]
+
+    # IBM-FRS item keys
+    keys_to_clear += [it["key"] for it in IBM_FRS_ITEMS_PT]
 
     mrc_keys = [
         "mrc_ext_tronco", "mrc_flex_pescoco", "mrc_flex_tronco",
@@ -671,9 +825,9 @@ def _import_from_full_export(text: str) -> tuple[bool, str]:
                 st.session_state["fono_chk"] = ok
                 st.session_state["fono_freq"] = num
 
-        m = re.search(r"Outras:\n(.*)$", t, flags=re.S)
-        if m:
-            st.session_state["outras_terapias"] = m.group(1).strip()
+        # NOVO: captura Outras e Escalas como blocos
+        st.session_state["outras_terapias"] = _extract_block(t, "Outras:", ["Escalas:"])
+        st.session_state["escalas"] = _extract_block(t, "Escalas:", [])
 
     # --- EXAME FÍSICO ---
     exf = secs.get("EXAME FÍSICO", "")
@@ -1099,6 +1253,66 @@ freq_row("Fonoterapia", "fono_chk", "fono_freq")
 st.markdown("**Outras terapias e informações:**")
 _ = text_area_lines("", 3, "outras_terapias", placeholder="Ex.: Terapia ocupacional (frequência), Psicoterapia (frequência), outras")
 
+# NOVO: Escalas + botão IBM-FRS
+st.markdown("**Escalas:**")
+_ = text_area_lines("", 2, "escalas", placeholder="IBM-FRS, ALS-FRS, CHOP INTEND, HFMSE, etc.")
+
+if st.button("IBM-FRS", key="btn_open_ibmfrs"):
+    st.session_state["ibmfrs_open"] = True
+    st.rerun()
+
+def _render_ibmfrs_form_body():
+    st.markdown("Preencha a **IBM-FRS** (0–4 por item). O total é calculado automaticamente (máximo **40**).")
+
+    def fmt_factory(desc_map):
+        return lambda x: f"{int(x)} — {desc_map[int(x)]}"
+
+    total = 0
+    for it in IBM_FRS_ITEMS_PT:
+        st.markdown(f"**{it['n']}. {it['title']}**")
+        st.radio(
+            "",
+            options=[4, 3, 2, 1, 0],
+            key=it["key"],
+            format_func=fmt_factory(it["desc"]),
+            horizontal=False,
+        )
+        total += int(st.session_state.get(it["key"], 4))
+
+    st.markdown("---")
+    st.metric("Total IBM-FRS", f"{total}/40")
+
+    c1, c2, _ = st.columns([1.9, 1.2, 10.0], vertical_alignment="center")
+    with c1:
+        if st.button("Salvar IBM-FRS em 'Escalas'", key="btn_save_ibmfrs", type="primary"):
+            line = _build_ibmfrs_line(total)
+            _upsert_scale_line("IBM-FRS:", line, target_key="escalas")
+            st.session_state["ibmfrs_open"] = False
+            st.rerun()
+    with c2:
+        if st.button("Cancelar", key="btn_cancel_ibmfrs"):
+            st.session_state["ibmfrs_open"] = False
+            st.rerun()
+
+# Modal (st.dialog / st.experimental_dialog) com fallback inline
+_ibm_dialog = None
+if hasattr(st, "dialog"):
+    @st.dialog("IBM-FRS")
+    def _ibm_dialog():
+        _render_ibmfrs_form_body()
+elif hasattr(st, "experimental_dialog"):
+    @st.experimental_dialog("IBM-FRS")
+    def _ibm_dialog():
+        _render_ibmfrs_form_body()
+
+if st.session_state.get("ibmfrs_open", False):
+    if _ibm_dialog is not None:
+        _ibm_dialog()
+    else:
+        st.info("Seu Streamlit não suporta modal (st.dialog). Mostrando o formulário IBM-FRS inline.")
+        st.markdown("### IBM-FRS")
+        _render_ibmfrs_form_body()
+
 # =========================================================
 # 4) NEUROLÓGICO GERAL + EXAME DE FORÇA (panel)
 # =========================================================
@@ -1412,6 +1626,11 @@ def build_export_text(include_all: bool) -> str:
     outras = _get("outras_terapias")
     if outras:
         multi_lines.append("Outras:\n" + outras)
+
+    # NOVO: Escalas
+    escalas = _get("escalas")
+    if escalas:
+        multi_lines.append("Escalas:\n" + escalas)
 
     parts.append(_section(">> Seguimento multidisciplinar", "\n".join([x for x in multi_lines if x.strip()])))
 
