@@ -59,6 +59,38 @@ st.markdown(
       label, .stTextArea label, .stRadio label, .stCheckbox label {
         margin-bottom: 0.15rem !important;
       }
+
+      /* ==========================
+         FIX: st.dialog layout (MRC todos os músculos)
+         ========================== */
+
+      /* tenta cobrir diferentes versões do Streamlit */
+      div[role="dialog"], div[data-testid="stDialog"]{
+        width: min(1100px, 96vw) !important;
+      }
+
+      /* dentro do dialog: não usar nowrap (evita label invadir os inputs) */
+      div[role="dialog"] .inline-label,
+      div[data-testid="stDialog"] .inline-label{
+        white-space: normal !important;
+        padding-top: 0.15rem !important;
+      }
+
+      /* dentro do dialog: desliga seus "tighteners" que podem colapsar spacing */
+      div[role="dialog"] div[data-testid="stTextInput"],
+      div[data-testid="stDialog"] div[data-testid="stTextInput"]{
+        margin-top: 0rem !important;
+      }
+
+      div[role="dialog"] div[data-testid="stVerticalBlock"] > div[data-testid="stElementContainer"],
+      div[data-testid="stDialog"] div[data-testid="stVerticalBlock"] > div[data-testid="stElementContainer"]{
+        margin-bottom: 0.55rem !important;
+      }
+
+      /* MRC-SS em vermelho no popup */
+      .mrc-ss-red{
+        color: #c00000 !important;
+      }
     </style>
     """,
     unsafe_allow_html=True,
@@ -71,6 +103,9 @@ st.markdown(
     "</div>",
     unsafe_allow_html=True,
 )
+
+
+
 
 # =========================================================
 # HELPERS (UI)
@@ -101,6 +136,34 @@ def small_mrc_box(key: str):
         label_visibility="collapsed",
         max_chars=1,
     )
+
+# =========================================================
+# MRC-SS (calc helper) uses the 12 classic keys
+# =========================================================
+MRC_SS_KEYS = [
+    "mrc_ombro_D", "mrc_ombro_E",
+    "mrc_cotovelo_D", "mrc_cotovelo_E",
+    "mrc_punho_D", "mrc_punho_E",
+    "mrc_quadril_D", "mrc_quadril_E",
+    "mrc_joelho_D", "mrc_joelho_E",
+    "mrc_tornozelo_D", "mrc_tornozelo_E",
+]
+MRC_SS_KEYS_SET = set(MRC_SS_KEYS)
+
+def compute_mrc_ss(mrc_keys_in: list[str]) -> tuple[bool, int | None]:
+    values = []
+    for k in mrc_keys_in:
+        v = st.session_state.get(k, "")
+        if v is None or str(v).strip() == "":
+            return (False, None)
+        try:
+            iv = int(str(v).strip())
+        except ValueError:
+            return (False, None)
+        if iv < 0 or iv > 5:
+            return (False, None)
+        values.append(iv)
+    return (True, sum(values))
 
 # =========================================================
 # HELPERS (EXPORT/IMPORT)
@@ -171,6 +234,198 @@ def _extract_block(body: str, marker: str, end_markers: list[str]) -> str:
     m = re.search(pattern, body, flags=re.S)
     return (m.group(1).strip() if m else "")
 
+# =========================================================
+# NIS (defs + helpers)
+# =========================================================
+NIS_MAX_WEAKNESS = 192
+NIS_MAX_REFLEXES = 20
+NIS_MAX_SENSATION = 32
+NIS_MAX_TOTAL = 244
+
+NIS_WEAKNESS_OPTIONS = [
+    (0.00, "normal"),
+    (1.00, "fraqueza 25%"),
+    (2.00, "fraqueza 50%"),
+    (3.00, "fraqueza 75%"),
+    (3.25, "move apenas contra a gravidade"),
+    (3.50, "move apenas com gravidade eliminada"),
+    (3.75, "contração palpável/visível, sem movimento"),
+    (4.00, "paralisia"),
+]
+NIS_WEAKNESS_VALUES = [v for v, _ in NIS_WEAKNESS_OPTIONS]
+NIS_WEAKNESS_LABEL = {v: t for v, t in NIS_WEAKNESS_OPTIONS}
+
+NIS_RS_OPTIONS = [
+    (0, "normal"),
+    (1, "diminuído"),
+    (2, "ausente"),
+]
+NIS_RS_VALUES = [v for v, _ in NIS_RS_OPTIONS]
+NIS_RS_LABEL = {v: t for v, t in NIS_RS_OPTIONS}
+
+# Structure from the attached form (as provided)
+NIS_WEAKNESS_ITEMS = [
+    ("Nervos cranianos", "Nervo oculomotor", "nis_cn_iii_r", "nis_cn_iii_l"),
+    ("Nervos cranianos", "Nervo abducente", "nis_cn_vi_r", "nis_cn_vi_l"),
+    ("Nervos cranianos", "Fraqueza facial", "nis_cn_facial_r", "nis_cn_facial_l"),
+    ("Nervos cranianos", "Fraqueza de palato", "nis_cn_palato_r", "nis_cn_palato_l"),
+    ("Nervos cranianos", "Fraqueza de língua", "nis_cn_lingua_r", "nis_cn_lingua_l"),
+
+    ("Fraqueza muscular", "Respiratório", "nis_mw_resp_r", "nis_mw_resp_l"),
+    ("Fraqueza muscular", "Flexão cervical", "nis_mw_pescoco_r", "nis_mw_pescoco_l"),
+    ("Fraqueza muscular", "Abdução do ombro", "nis_mw_ombro_r", "nis_mw_ombro_l"),
+    ("Fraqueza muscular", "Flexão do cotovelo", "nis_mw_cotov_flex_r", "nis_mw_cotov_flex_l"),
+    ("Fraqueza muscular", "Braquiorradial", "nis_mw_braq_r", "nis_mw_braq_l"),
+    ("Fraqueza muscular", "Extensão do cotovelo", "nis_mw_cotov_ext_r", "nis_mw_cotov_ext_l"),
+    ("Fraqueza muscular", "Flexão do punho", "nis_mw_punho_flex_r", "nis_mw_punho_flex_l"),
+    ("Fraqueza muscular", "Extensão do punho", "nis_mw_punho_ext_r", "nis_mw_punho_ext_l"),
+    ("Fraqueza muscular", "Flexão dos dedos", "nis_mw_dedos_flex_r", "nis_mw_dedos_flex_l"),
+    ("Fraqueza muscular", "Abdução dos dedos", "nis_mw_dedos_abd_r", "nis_mw_dedos_abd_l"),
+    ("Fraqueza muscular", "Abdução do polegar", "nis_mw_polegar_r", "nis_mw_polegar_l"),
+
+    ("Membros inferiores", "Flexão do quadril", "nis_hip_flex_r", "nis_hip_flex_l"),
+    ("Membros inferiores", "Extensão do quadril", "nis_hip_ext_r", "nis_hip_ext_l"),
+    ("Membros inferiores", "Flexão do joelho", "nis_knee_flex_r", "nis_knee_flex_l"),
+    ("Membros inferiores", "Extensão do joelho", "nis_knee_ext_r", "nis_knee_ext_l"),
+    ("Membros inferiores", "Dorsiflexão do tornozelo", "nis_ankle_df_r", "nis_ankle_df_l"),
+    ("Membros inferiores", "Flexão plantar", "nis_ankle_pf_r", "nis_ankle_pf_l"),
+    ("Membros inferiores", "Extensão do hálux", "nis_toe_ext_r", "nis_toe_ext_l"),
+    ("Membros inferiores", "Flexão do hálux", "nis_toe_flex_r", "nis_toe_flex_l"),
+]
+
+NIS_REFLEX_ITEMS = [
+    ("Reflexos", "Bíceps braquial", "nis_ref_biceps_r", "nis_ref_biceps_l"),
+    ("Reflexos", "Tríceps braquial", "nis_ref_triceps_r", "nis_ref_triceps_l"),
+    ("Reflexos", "Estilorradial", "nis_ref_braq_r", "nis_ref_braq_l"),
+    ("Reflexos", "Patelar", "nis_ref_patellar_r", "nis_ref_patellar_l"),
+    ("Reflexos", "Aquileu", "nis_ref_achilles_r", "nis_ref_achilles_l"),
+]
+
+NIS_SENS_FINGER_ITEMS = [
+    ("Sensibilidade – dedo indicador", "Sensibilidade tátil", "nis_sf_touch_r", "nis_sf_touch_l"),
+    ("Sensibilidade – dedo indicador", "Sensibilidade dolorosa", "nis_sf_pin_r", "nis_sf_pin_l"),
+    ("Sensibilidade – dedo indicador", "Vibração", "nis_sf_vib_r", "nis_sf_vib_l"),
+    ("Sensibilidade – dedo indicador", "Artrestesia", "nis_sf_jps_r", "nis_sf_jps_l"),
+]
+
+NIS_SENS_TOE_ITEMS = [
+    ("Sensibilidade – hálux", "Sensibilidade tátil", "nis_st_touch_r", "nis_st_touch_l"),
+    ("Sensibilidade – hálux", "Sensibilidade dolorosa", "nis_st_pin_r", "nis_st_pin_l"),
+    ("Sensibilidade – hálux", "Vibração", "nis_st_vib_r", "nis_st_vib_l"),
+    ("Sensibilidade – hálux", "Artrestesia", "nis_st_jps_r", "nis_st_jps_l"),
+]
+
+NIS_KEYS_WEAKNESS = [k for _, _, kr, kl in NIS_WEAKNESS_ITEMS for k in (kr, kl)]
+NIS_KEYS_REFLEXES = [k for _, _, kr, kl in NIS_REFLEX_ITEMS for k in (kr, kl)]
+NIS_KEYS_SENSATION = [k for _, _, kr, kl in (NIS_SENS_FINGER_ITEMS + NIS_SENS_TOE_ITEMS) for k in (kr, kl)]
+NIS_ALL_KEYS = NIS_KEYS_WEAKNESS + NIS_KEYS_REFLEXES + NIS_KEYS_SENSATION
+
+def _fmt_score(x: float) -> str:
+    s = f"{float(x):.2f}".rstrip("0").rstrip(".")
+    return s if s else "0"
+
+def init_nis_state():
+    st.session_state.setdefault("nis_open", False)
+    st.session_state.setdefault("nis_total", "")
+
+    for k in NIS_KEYS_WEAKNESS:
+        if k not in st.session_state or st.session_state[k] not in NIS_WEAKNESS_VALUES:
+            st.session_state[k] = 0.00
+
+    for k in (NIS_KEYS_REFLEXES + NIS_KEYS_SENSATION):
+        if k not in st.session_state or st.session_state[k] not in NIS_RS_VALUES:
+            st.session_state[k] = 0
+
+def compute_nis_components() -> tuple[float, float, float, float]:
+    w = sum(float(st.session_state.get(k, 0.0)) for k in NIS_KEYS_WEAKNESS)
+    r = sum(float(st.session_state.get(k, 0.0)) for k in NIS_KEYS_REFLEXES)
+    s = sum(float(st.session_state.get(k, 0.0)) for k in NIS_KEYS_SENSATION)
+    return w, r, s, (w + r + s)
+
+def nis_row(label: str, key_r: str, key_l: str, *, kind: str):
+    c0, c1, c2, _fill = st.columns([3.2, 1.8, 1.8, 10.0], vertical_alignment="center")
+    with c0:
+        st.markdown(f'<div class="inline-label">{label}</div>', unsafe_allow_html=True)
+    with c1:
+        if kind == "weakness":
+            st.selectbox(
+                "",
+                options=NIS_WEAKNESS_VALUES,
+                key=key_r,
+                format_func=lambda v: NIS_WEAKNESS_LABEL[v],
+                label_visibility="collapsed",
+            )
+        else:
+            st.selectbox(
+                "",
+                options=NIS_RS_VALUES,
+                key=key_r,
+                format_func=lambda v: NIS_RS_LABEL[v],
+                label_visibility="collapsed",
+            )
+    with c2:
+        if kind == "weakness":
+            st.selectbox(
+                "",
+                options=NIS_WEAKNESS_VALUES,
+                key=key_l,
+                format_func=lambda v: NIS_WEAKNESS_LABEL[v],
+                label_visibility="collapsed",
+            )
+        else:
+            st.selectbox(
+                "",
+                options=NIS_RS_VALUES,
+                key=key_l,
+                format_func=lambda v: NIS_RS_LABEL[v],
+                label_visibility="collapsed",
+            )
+
+# =========================================================
+# MRC - FULL LIST (for dialog + export/import)
+# =========================================================
+MRC_ALL_ITEMS_UPPER = [
+    ("Abdução do ombro", "mrc_ombro_D", "mrc_ombro_E"),  # used in MRC-SS
+    ("Adução do ombro", "mrc_ombro_add_D", "mrc_ombro_add_E"),
+    ("Flexores do cotovelo", "mrc_cotovelo_D", "mrc_cotovelo_E"),  # used in MRC-SS
+    ("Extensores do cotovelo", "mrc_cotovelo_ext_D", "mrc_cotovelo_ext_E"),
+    ("Extensores de punho", "mrc_punho_D", "mrc_punho_E"),  # used in MRC-SS
+    ("Flexores de punho", "mrc_punho_flex_D", "mrc_punho_flex_E"),
+    ("Extensores de dedos", "mrc_dedos_ext_D", "mrc_dedos_ext_E"),
+    ("Flexores profundos dos dedos", "mrc_dedos_flexprof_D", "mrc_dedos_flexprof_E"),
+    ("Abdução dos dedos", "mrc_dedos_abd_D", "mrc_dedos_abd_E"),
+    ("Oponência do polegar", "mrc_polegar_op_D", "mrc_polegar_op_E"),
+    ("Abdutor do dedo mínimo", "mrc_minimo_abd_D", "mrc_minimo_abd_E"),
+]
+
+MRC_ALL_ITEMS_LOWER = [
+    ("Flexores de quadril", "mrc_quadril_D", "mrc_quadril_E"),  # used in MRC-SS
+    ("Extensores do quadril", "mrc_quadril_ext_D", "mrc_quadril_ext_E"),
+    ("Abdutores do quadril", "mrc_quadril_abd_D", "mrc_quadril_abd_E"),
+    ("Adutores do quadril", "mrc_quadril_add_D", "mrc_quadril_add_E"),
+    ("Flexores do joelho", "mrc_joelho_flex_D", "mrc_joelho_flex_E"),
+    ("Extensores do joelho", "mrc_joelho_D", "mrc_joelho_E"),  # used in MRC-SS
+    ("Dorsiflexão do pé", "mrc_tornozelo_D", "mrc_tornozelo_E"),  # used in MRC-SS
+    ("Flexão do pé", "mrc_pe_flex_D", "mrc_pe_flex_E"),
+    ("Eversores do pé", "mrc_pe_evers_D", "mrc_pe_evers_E"),
+    ("Inversores do pé", "mrc_pe_invers_D", "mrc_pe_invers_E"),
+    ("Extensores do hálux", "mrc_halux_ext_D", "mrc_halux_ext_E"),
+    ("Flexores do hálux", "mrc_halux_flex_D", "mrc_halux_flex_E"),
+]
+
+MRC_ALL_ITEMS = MRC_ALL_ITEMS_UPPER + MRC_ALL_ITEMS_LOWER
+MRC_ALL_KEYS = [k for _, kd, ke in MRC_ALL_ITEMS for k in (kd, ke)]
+
+def init_mrc_all_state():
+    for k in MRC_ALL_KEYS:
+        st.session_state.setdefault(k, "")
+
+# =========================================================
+# RESET / IMPORT
+# =========================================================
+def _dlg_key(k: str) -> str:
+    return f"dlg_{k}"
+
 def _reset_form_state():
     keys_to_clear = [
         # Identificação
@@ -184,10 +439,12 @@ def _reset_form_state():
         "tratamento_atual_radio", "trat_em_uso_tempo", "trat_sem_tempo",
         "meds_atual_previo_texto", "outros_meds_texto", "paciente_transplantado",
         # Evolução
-        "controle_atual_radio", "evo_estavel_tempo", "evo_descricao_texto",
-        "incat_total", "pnd_total", "mrc_ss_total", "outras_escalas_seguimento",
+        "controle_atual_radio", "evo_estavel_tempo", "evo_descricao_texto", "evo_reabilitacao_texto",
+        "incat_total", "pnd_total", "mrc_ss_total", "nis_total", "outras_escalas_seguimento",
         # INCAT panel internal
         "incat_open", "incat_ul", "incat_ll", "radio_incat_ul", "radio_incat_ll",
+        # NIS panel internal
+        "nis_open",
         # Exame físico
         "exame_fisico_neuro_texto", "deformidades_osteo_texto",
         # Exames complementares
@@ -203,17 +460,34 @@ def _reset_form_state():
         "export_mode", "export_text", "import_text",
     ]
 
-    mrc_keys_local = [
-        "mrc_ombro_D", "mrc_ombro_E",
-        "mrc_cotovelo_D", "mrc_cotovelo_E",
-        "mrc_punho_D", "mrc_punho_E",
-        "mrc_quadril_D", "mrc_quadril_E",
-        "mrc_joelho_D", "mrc_joelho_E",
-        "mrc_tornozelo_D", "mrc_tornozelo_E",
-    ]
+    # also clear dialog temp keys
+    dlg_keys = [_dlg_key(k) for k in MRC_ALL_KEYS]
 
-    for k in keys_to_clear + mrc_keys_local:
+    for k in keys_to_clear + MRC_ALL_KEYS + NIS_ALL_KEYS + dlg_keys:
         st.session_state.pop(k, None)
+
+def _parse_keyvals_block(block: str) -> dict[str, str]:
+    out: dict[str, str] = {}
+    if not block:
+        return out
+    for ln in _norm(block).split("\n"):
+        ln = ln.strip()
+        if not ln or ln.startswith("#"):
+            continue
+        m = re.match(r"^([A-Za-z0-9_]+)\s*[:=]\s*(.+?)\s*$", ln)
+        if not m:
+            continue
+        out[m.group(1)] = m.group(2).strip()
+    return out
+
+# Backward-compatible aliases for older exports (optional)
+_MRC_LABEL_ALIASES = {
+    "Flexão do cotovelo": "Flexores do cotovelo",
+    "Extensão do punho": "Extensores de punho",
+    "Flexão do quadril": "Flexores de quadril",
+    "Extensão do joelho": "Extensores do joelho",
+    "Dorsiflexão do tornozelo": "Dorsiflexão do pé",
+}
 
 def _import_from_full_export(text: str) -> tuple[bool, str]:
     secs = split_sections(text)
@@ -221,17 +495,13 @@ def _import_from_full_export(text: str) -> tuple[bool, str]:
         return False, "Não foi possível identificar as seções. Confirme se o texto foi exportado por 'Exportar histórico completo'."
 
     _reset_form_state()
+    init_mrc_all_state()
+    init_nis_state()
 
-    # -----------------------------
-    # IDENTIFICAÇÃO
-    # -----------------------------
     ident = secs.get("IDENTIFICAÇÃO", "")
     if ident:
         st.session_state["id_texto"] = _norm(ident).strip()
 
-    # -----------------------------
-    # HISTÓRIA CLÍNICA
-    # -----------------------------
     hc = secs.get("HISTÓRIA CLÍNICA", "")
     if hc:
         hc_n = _norm(hc)
@@ -243,12 +513,10 @@ def _import_from_full_export(text: str) -> tuple[bool, str]:
         else:
             st.session_state["historia_clinica_texto"] = hc_n.strip()
 
-    # ANTECEDENTES
     ap = secs.get("ANTECEDENTES PATOLÓGICOS", "")
     if ap:
         st.session_state["antecedentes_patologicos_texto"] = _norm(ap).strip()
 
-    # HISTÓRIA FAMILIAR
     hf = secs.get("HISTÓRIA FAMILIAR", "")
     if hf:
         t = _norm(hf).strip()
@@ -261,7 +529,6 @@ def _import_from_full_export(text: str) -> tuple[bool, str]:
         else:
             st.session_state["historia_familiar_texto"] = t
 
-    # MEDICAÇÕES
     meds = secs.get("MEDICAÇÕES MODIFICADORAS DE DOENÇA / IMUNOSSUPRESSORES", "")
     if meds:
         t = _norm(meds)
@@ -292,7 +559,6 @@ def _import_from_full_export(text: str) -> tuple[bool, str]:
         if transp:
             st.session_state["paciente_transplantado"] = transp.strip().lower().startswith("sim")
 
-    # EVOLUÇÃO
     evo = secs.get("EVOLUÇÃO CLÍNICA", "")
     if evo:
         t = _norm(evo)
@@ -308,10 +574,53 @@ def _import_from_full_export(text: str) -> tuple[bool, str]:
         desc = _extract_block(
             t,
             "Descrição da evolução:",
-            ["Escala INCAT:", "MRC-SS:", "Outras escalas e métricas:"],
+            ["Reabilitação:", "NIS:", "NIS_ITENS:", "Escala INCAT:", "MRC-SS:", "Outras escalas e métricas:"],
         )
         if desc:
             st.session_state["evo_descricao_texto"] = desc
+
+        reab = _extract_block(
+            t,
+            "Reabilitação:",
+            ["NIS:", "NIS_ITENS:", "Escala INCAT:", "MRC-SS:", "Outras escalas e métricas:"],
+        )
+        if reab:
+            st.session_state["evo_reabilitacao_texto"] = reab
+
+        nis = _extract_line_value(t, "NIS:")
+        if nis:
+            st.session_state["nis_total"] = nis
+
+        nis_items_block = _extract_block(
+            t,
+            "NIS_ITENS:",
+            ["Escala INCAT:", "MRC-SS:", "Outras escalas e métricas:"],
+        )
+        kv = _parse_keyvals_block(nis_items_block)
+        for k, v in kv.items():
+            if k in NIS_KEYS_WEAKNESS:
+                try:
+                    fv = float(str(v).replace(",", "."))
+                    if fv in NIS_WEAKNESS_VALUES:
+                        st.session_state[k] = fv
+                except ValueError:
+                    pass
+            elif k in (NIS_KEYS_REFLEXES + NIS_KEYS_SENSATION):
+                try:
+                    iv = int(str(v).strip())
+                    if iv in NIS_RS_VALUES:
+                        st.session_state[k] = iv
+                except ValueError:
+                    pass
+
+        if (not st.session_state.get("nis_total")) and kv:
+            w, r, s, tot = compute_nis_components()
+            st.session_state["nis_total"] = (
+                f"Fraqueza ({_fmt_score(w)}/{NIS_MAX_WEAKNESS}) + "
+                f"Reflexos ({_fmt_score(r)}/{NIS_MAX_REFLEXES}) + "
+                f"Sensibilidade ({_fmt_score(s)}/{NIS_MAX_SENSATION}) = "
+                f"Total ({_fmt_score(tot)}/{NIS_MAX_TOTAL})"
+            )
 
         incat = _extract_line_value(t, "Escala INCAT:")
         if incat:
@@ -325,7 +634,6 @@ def _import_from_full_export(text: str) -> tuple[bool, str]:
         if outras:
             st.session_state["outras_escalas_seguimento"] = outras
 
-    # EXAME FÍSICO
     exf = secs.get("EXAME FÍSICO NEUROLÓGICO", "")
     if exf:
         t = _norm(exf).strip()
@@ -350,14 +658,10 @@ def _import_from_full_export(text: str) -> tuple[bool, str]:
                 st.session_state["exame_fisico_neuro_texto"] = t
 
         if mrc_block:
-            map_lbl = {
-                "Abdução do ombro": ("mrc_ombro_D", "mrc_ombro_E"),
-                "Flexão do cotovelo": ("mrc_cotovelo_D", "mrc_cotovelo_E"),
-                "Extensão do punho": ("mrc_punho_D", "mrc_punho_E"),
-                "Flexão do quadril": ("mrc_quadril_D", "mrc_quadril_E"),
-                "Extensão do joelho": ("mrc_joelho_D", "mrc_joelho_E"),
-                "Dorsiflexão do tornozelo": ("mrc_tornozelo_D", "mrc_tornozelo_E"),
-            }
+            map_lbl = {lbl: (kd, ke) for (lbl, kd, ke) in MRC_ALL_ITEMS}
+            # add aliases for older labels
+            map_lbl.update({alias: map_lbl[target] for alias, target in _MRC_LABEL_ALIASES.items() if target in map_lbl})
+
             for ln in mrc_block.split("\n"):
                 ln = ln.strip()
                 if not ln:
@@ -373,7 +677,10 @@ def _import_from_full_export(text: str) -> tuple[bool, str]:
                     st.session_state[kd] = vd
                     st.session_state[ke] = ve
 
-    # EXAMES COMPLEMENTARES
+        ok_mrc, tot_mrc = compute_mrc_ss(MRC_SS_KEYS)
+        if ok_mrc and tot_mrc is not None:
+            st.session_state["mrc_ss_total"] = str(tot_mrc)
+
     exc = secs.get("EXAMES COMPLEMENTARES", "")
     if exc:
         t = _norm(exc).strip()
@@ -388,12 +695,10 @@ def _import_from_full_export(text: str) -> tuple[bool, str]:
             if val:
                 st.session_state[key] = val
 
-    # IMPRESSÃO
     imp = secs.get("IMPRESSÃO E DISCUSSÃO", "")
     if imp:
         st.session_state["impressao_discussao"] = _norm(imp).strip()
 
-    # DIAGNÓSTICO
     dx = secs.get("DIAGNÓSTICO / HIPÓTESE DIAGNÓSTICA", "")
     if dx:
         t = [ln.strip() for ln in _norm(dx).split("\n") if ln.strip()]
@@ -422,7 +727,6 @@ def _import_from_full_export(text: str) -> tuple[bool, str]:
                     if cat == "Outros diagnósticos (neurônio motor, junção e músculo)":
                         st.session_state["dx_outros_diagnosticos"] = extra
 
-    # CONDUTA
     cnd = secs.get("CONDUTA", "")
     if cnd:
         st.session_state["conduta"] = _norm(cnd).strip()
@@ -439,31 +743,10 @@ if st.session_state.get("_do_import", False):
     st.rerun()
 
 # =========================================================
-# MRC-SS (calc helper)
+# INIT STATES
 # =========================================================
-mrc_keys = [
-    "mrc_ombro_D", "mrc_ombro_E",
-    "mrc_cotovelo_D", "mrc_cotovelo_E",
-    "mrc_punho_D", "mrc_punho_E",
-    "mrc_quadril_D", "mrc_quadril_E",
-    "mrc_joelho_D", "mrc_joelho_E",
-    "mrc_tornozelo_D", "mrc_tornozelo_E",
-]
-
-def compute_mrc_ss(mrc_keys_in: list[str]) -> tuple[bool, int | None]:
-    values = []
-    for k in mrc_keys_in:
-        v = st.session_state.get(k, "")
-        if v is None or str(v).strip() == "":
-            return (False, None)
-        try:
-            iv = int(str(v).strip())
-        except ValueError:
-            return (False, None)
-        if iv < 0 or iv > 5:
-            return (False, None)
-        values.append(iv)
-    return (True, sum(values))
+init_mrc_all_state()
+init_nis_state()
 
 # =========================================================
 # IDENTIFICAÇÃO
@@ -523,7 +806,7 @@ if esporadico and familiar:
     st.warning("Você marcou **Esporádico** e **Familiar** ao mesmo tempo. Se preferir, selecione apenas um.")
 
 # =========================================================
-# 4) Medicações modificadoras de doença/Imunossupressores
+# 4) Medicações
 # =========================================================
 st.subheader("Medicamentos")
 st.markdown("**Tratamento atual:**")
@@ -576,10 +859,23 @@ if controle_atual == "estável ou melhorando":
     _ = inline_label_input("há quanto tempo", key="evo_estavel_tempo", placeholder="Ex.: desde jan/2021")
 
 st.markdown("**Descrição da evolução:**")
-_ = text_area_lines(label="", lines=5, key="evo_descricao_texto", placeholder="")
+_ = text_area_lines(
+    label="",
+    lines=5,
+    key="evo_descricao_texto",
+    placeholder="Evolução dos sintomas motores, sensitivos e autonômicos. Adesão e efeitos colaterais dos medicamentos.",
+)
+
+st.markdown("**Reabilitação:**")
+_ = text_area_lines(
+    label="",
+    lines=3,
+    key="evo_reabilitacao_texto",
+    placeholder="Fisioterapia e frequência. Outras modalidades de reabilitação.",
+)
 
 # =========================================================
-# INCAT + PND + MRC-SS display
+# INCAT + PND + NIS + MRC-SS display
 # =========================================================
 def ll_to_pnd(ll_value: int) -> str:
     if ll_value == 0:
@@ -605,6 +901,9 @@ with c_left:
     if st.button("Escala INCAT e PND", key="btn_open_incat"):
         st.session_state["incat_open"] = True
 
+    if st.button("Escala NIS", key="btn_open_nis"):
+        st.session_state["nis_open"] = True
+
 with c_right:
     st.text_input(
         "Escala INCAT (MMSS + MMII)",
@@ -617,6 +916,18 @@ with c_right:
         disabled=True,
     )
 
+    nis_placeholder = (
+        f"Calculada automaticamente (Fraqueza máx {NIS_MAX_WEAKNESS}; "
+        f"Reflexos máx {NIS_MAX_REFLEXES}; Sensibilidade máx {NIS_MAX_SENSATION}; "
+        f"Total máx {NIS_MAX_TOTAL})"
+    )
+    nis_display_value = (
+        str(st.session_state.get("nis_total", "")).strip()
+        if str(st.session_state.get("nis_total", "")).strip() != ""
+        else nis_placeholder
+    )
+    st.text_input("Escala NIS", value=nis_display_value, disabled=True)
+
     mrc_display_value = (
         str(st.session_state.get("mrc_ss_total", "")).strip()
         if str(st.session_state.get("mrc_ss_total", "")).strip() != ""
@@ -624,6 +935,9 @@ with c_right:
     )
     st.text_input("Escala MRC-SS", value=mrc_display_value, disabled=True)
 
+# --------------------------
+# INCAT PANEL
+# --------------------------
 if st.session_state["incat_open"]:
     st.markdown("#### Escala INCAT")
 
@@ -690,8 +1004,85 @@ if st.session_state["incat_open"]:
             st.session_state["incat_open"] = False
             st.rerun()
 
+# --------------------------
+# NIS PANEL
+# --------------------------
+if st.session_state.get("nis_open", False):
+    st.markdown("#### Escala NIS")
+
+    h0, h1, h2, _hf = st.columns([3.2, 1.8, 1.8, 10.0], vertical_alignment="center")
+    with h0:
+        st.markdown("**Item**")
+    with h1:
+        st.markdown("**Direito**")
+    with h2:
+        st.markdown("**Esquerdo**")
+
+    def render_group(title: str, items: list[tuple[str, str, str, str]], kind: str):
+        st.markdown(f"**{title}**")
+        for _grp, lbl, kr, kl in items:
+            nis_row(lbl, kr, kl, kind=kind)
+        st.markdown("---")
+
+    render_group("Nervos cranianos (fraqueza)", [x for x in NIS_WEAKNESS_ITEMS if x[0] == "Nervos cranianos"], kind="weakness")
+    render_group("Fraqueza muscular", [x for x in NIS_WEAKNESS_ITEMS if x[0] == "Fraqueza muscular"], kind="weakness")
+    render_group("Membros inferiores", [x for x in NIS_WEAKNESS_ITEMS if x[0] == "Membros inferiores"], kind="weakness")
+
+    st.markdown("**Reflexos**")
+    for _grp, lbl, kr, kl in NIS_REFLEX_ITEMS:
+        nis_row(lbl, kr, kl, kind="rs")
+    st.markdown("---")
+
+    st.markdown("**Sensibilidade – dedo indicador**")
+    for _grp, lbl, kr, kl in NIS_SENS_FINGER_ITEMS:
+        nis_row(lbl, kr, kl, kind="rs")
+    st.markdown("---")
+
+    st.markdown("**Sensibilidade – hálux**")
+    for _grp, lbl, kr, kl in NIS_SENS_TOE_ITEMS:
+        nis_row(lbl, kr, kl, kind="rs")
+    st.markdown("---")
+
+    w, r, s, t = compute_nis_components()
+    st.markdown(
+        f"**Prévia:** Fraqueza **{_fmt_score(w)}/{NIS_MAX_WEAKNESS}** · "
+        f"Reflexos **{_fmt_score(r)}/{NIS_MAX_REFLEXES}** · "
+        f"Sensibilidade **{_fmt_score(s)}/{NIS_MAX_SENSATION}** · "
+        f"Total **{_fmt_score(t)}/{NIS_MAX_TOTAL}**"
+    )
+
+    b1, b2, b3, _bfill = st.columns([1.4, 1.0, 1.2, 10.0], vertical_alignment="center")
+    with b1:
+        if st.button("Salvar NIS", key="btn_save_nis", type="primary"):
+            w, r, s, t = compute_nis_components()
+            st.session_state["nis_total"] = (
+                f"Fraqueza ({_fmt_score(w)}/{NIS_MAX_WEAKNESS}) + "
+                f"Reflexos ({_fmt_score(r)}/{NIS_MAX_REFLEXES}) + "
+                f"Sensibilidade ({_fmt_score(s)}/{NIS_MAX_SENSATION}) = "
+                f"Total ({_fmt_score(t)}/{NIS_MAX_TOTAL})"
+            )
+            st.session_state["nis_open"] = False
+            st.rerun()
+    with b2:
+        if st.button("Cancelar", key="btn_cancel_nis"):
+            st.session_state["nis_open"] = False
+            st.rerun()
+    with b3:
+        if st.button("Limpar NIS", key="btn_clear_nis"):
+            for k in NIS_KEYS_WEAKNESS:
+                st.session_state[k] = 0.00
+            for k in (NIS_KEYS_REFLEXES + NIS_KEYS_SENSATION):
+                st.session_state[k] = 0
+            st.session_state["nis_total"] = ""
+            st.rerun()
+
 st.markdown("**Outras escalas e métricas de seguimento**")
-_ = text_area_lines("", 5, "outras_escalas_seguimento", placeholder="NIS, dinamometria, tempo de marcha, TUG, etc.")
+_ = text_area_lines(
+    "",
+    5,
+    "outras_escalas_seguimento",
+    placeholder="NIS, dinamometria, tempo de marcha, TUG, RODS, Norfolk, COMPASS-31, etc.",
+)
 
 # =========================================================
 # 6) Exame físico neurológico
@@ -724,6 +1115,7 @@ def mrc_row(label: str, key_d: str, key_e: str):
     with c2:
         small_mrc_box(key_e)
 
+# Keep current muscle groups in main page (same keys)
 mrc_row("Abdução do ombro:", "mrc_ombro_D", "mrc_ombro_E")
 mrc_row("Flexão do cotovelo:", "mrc_cotovelo_D", "mrc_cotovelo_E")
 mrc_row("Extensão do punho:", "mrc_punho_D", "mrc_punho_E")
@@ -731,13 +1123,135 @@ mrc_row("Flexão do quadril:", "mrc_quadril_D", "mrc_quadril_E")
 mrc_row("Extensão do joelho:", "mrc_joelho_D", "mrc_joelho_E")
 mrc_row("Dorsiflexão do tornozelo:", "mrc_tornozelo_D", "mrc_tornozelo_E")
 
-complete, total = compute_mrc_ss(mrc_keys)
+# =========================================================
+# MRC FULL DIALOG (use temporary keys to avoid duplicates)
+# =========================================================
+dialog_decorator = getattr(st, "dialog", None)
+if dialog_decorator is None:
+    dialog_decorator = getattr(st, "experimental_dialog", None)
 
-bcalc1, bcalc2, _fill = st.columns([2.2, 2.2, 10.0], vertical_alignment="center")
+def _dlg_key(k: str) -> str:
+    return f"dlg_{k}"
+
+def _mrc_all_row_dialog(label_html: str, main_key_d: str, main_key_e: str):
+    # SEM coluna filler: no dialog ela destrói a largura útil
+    c0, c1, c2 = st.columns([6.0, 2.0, 2.0], vertical_alignment="center")
+
+    with c0:
+        st.markdown(f'<div class="inline-label">{label_html}</div>', unsafe_allow_html=True)
+
+    with c1:
+        st.text_input(
+            "",
+            key=_dlg_key(main_key_d),
+            placeholder="0-5",
+            label_visibility="collapsed",
+            max_chars=1,
+        )
+
+    with c2:
+        st.text_input(
+            "",
+            key=_dlg_key(main_key_e),
+            placeholder="0-5",
+            label_visibility="collapsed",
+            max_chars=1,
+        )
+
+if dialog_decorator is not None:
+    @dialog_decorator("MRC – todos os músculos")
+    def mrc_all_dialog():
+        st.markdown("**Membros superiores**")
+
+        hh0, hh1, hh2 = st.columns([6.0, 2.0, 2.0], vertical_alignment="center")
+        with hh0:
+            st.markdown("**Grupo muscular**")
+        with hh1:
+            st.markdown("**Direito**")
+        with hh2:
+            st.markdown("**Esquerdo**")
+
+        # ---- MMSS: MRC-SS em vermelho (por key) ----
+        for lbl, kd, ke in MRC_ALL_ITEMS_UPPER:
+            is_mrcss_row = (kd in MRC_SS_KEYS_SET) or (ke in MRC_SS_KEYS_SET)
+            lbl_show = f'<span class="mrc-ss-red">{lbl}:</span>' if is_mrcss_row else f"{lbl}:"
+            _mrc_all_row_dialog(lbl_show, kd, ke)
+
+        st.markdown("---")
+        st.markdown("**Membros inferiores**")
+
+        # Header CONSISTENTE com as linhas (3 colunas, sem filler)
+        hh0, hh1, hh2 = st.columns([6.0, 2.0, 2.0], vertical_alignment="center")
+        with hh0:
+            st.markdown("**Grupo muscular**")
+        with hh1:
+            st.markdown("**Direito**")
+        with hh2:
+            st.markdown("**Esquerdo**")
+
+        # ---- MMII: MRC-SS em vermelho (por key) ----
+        for lbl, kd, ke in MRC_ALL_ITEMS_LOWER:
+            is_mrcss_row = (kd in MRC_SS_KEYS_SET) or (ke in MRC_SS_KEYS_SET)
+            lbl_show = f'<span class="mrc-ss-red">{lbl}:</span>' if is_mrcss_row else f"{lbl}:"
+            _mrc_all_row_dialog(lbl_show, kd, ke)
+
+        # prévia do MRC-SS (usando as chaves temporárias do dialog)
+        dlg_mrc_keys = [_dlg_key(k) for k in MRC_SS_KEYS]
+        ok_mrc, tot_mrc = compute_mrc_ss(dlg_mrc_keys)
+
+        st.markdown("---")
+        if ok_mrc and tot_mrc is not None:
+            st.success(f"MRC-SS (prévia): {tot_mrc}")
+        else:
+            st.info("MRC-SS será calculado ao salvar, se os 12 campos do MRC-SS estiverem preenchidos (0–5).")
+
+        b1, b2, b3 = st.columns([1.4, 1.0, 1.2], vertical_alignment="center")
+        with b1:
+            if st.button("Salvar", type="primary", key="btn_mrc_all_save"):
+                # copia do dialog -> main
+                for k in MRC_ALL_KEYS:
+                    st.session_state[k] = st.session_state.get(_dlg_key(k), "")
+
+                ok2, tot2 = compute_mrc_ss(MRC_SS_KEYS)
+                if ok2 and tot2 is not None:
+                    st.session_state["mrc_ss_total"] = str(tot2)
+
+                # limpa temporários
+                for k in MRC_ALL_KEYS:
+                    st.session_state.pop(_dlg_key(k), None)
+
+                st.rerun()
+        with b2:
+            if st.button("Cancelar", key="btn_mrc_all_cancel"):
+                for k in MRC_ALL_KEYS:
+                    st.session_state.pop(_dlg_key(k), None)
+                st.rerun()
+        with b3:
+            if st.button("Limpar todos (popup)", key="btn_mrc_all_clear"):
+                for k in MRC_ALL_KEYS:
+                    st.session_state[_dlg_key(k)] = ""
+                st.rerun()
+
+    def open_mrc_all_dialog():
+        # preenche temporários com valores atuais
+        for k in MRC_ALL_KEYS:
+            st.session_state[_dlg_key(k)] = st.session_state.get(k, "")
+        mrc_all_dialog()
+
+else:
+    def open_mrc_all_dialog():
+        st.warning("Sua versão do Streamlit não suporta pop-up (st.dialog). Atualize para usar 'Todos os músculos'.")
+
+# =========================================================
+# MRC-SS buttons row (NOW calling open_mrc_all_dialog)
+# =========================================================
+complete, total = compute_mrc_ss(MRC_SS_KEYS)
+
+bcalc1, bcalc2, bcalc3, _fill = st.columns([2.2, 2.2, 2.2, 10.0], vertical_alignment="center")
 with bcalc1:
     if complete:
         if st.button("Calcular MRC-SS", key="btn_calc_mrcss", type="primary"):
-            st.session_state["mrc_ss_total"] = total
+            st.session_state["mrc_ss_total"] = str(total)
             st.success(f"MRC-SS calculado: {total}")
             st.rerun()
     else:
@@ -746,8 +1260,10 @@ with bcalc2:
     if st.button("Limpar MRC-SS", key="btn_clear_mrcss"):
         st.session_state["mrc_ss_total"] = ""
         st.rerun()
+with bcalc3:
+    if st.button("Todos os músculos", key="btn_open_mrc_all"):
+        open_mrc_all_dialog()
 
-# (Opcional, mas mantém compatibilidade com export/import)
 st.markdown("**Deformidades osteoesqueléticas e exame clínico geral:**")
 _ = text_area_lines("", 3, "deformidades_osteo_texto", placeholder="")
 
@@ -801,16 +1317,15 @@ if dx_categoria == "Neuropatia genética":
         gen_options = ["TTR", "PPOX", "HMBS", "CPOX", "PMP22", "MPZ", "GJB1", "MFN2", "Outro"]
         dx_genetica_choice = st.radio("Gene:", options=gen_options, key="dx_genetica_choice")
         if dx_genetica_choice == "Outro":
-            st.text_input("Especifique:", key="dx_genetica_outro", placeholder="Ex.: GDAP1, TTR, etc.")
+            st.text_input("Especifique:", key="dx_genetica_outro", placeholder="Ex.: GDAP1, etc.")
 
 if dx_categoria == "Neuropatia imunomediada":
     with st.expander("Detalhar (Neuropatia imunomediada)", expanded=True):
         imuno_options = ["CIDP", "Vasculite", "Ganglionopatia", "Guillain-Barré", "Neuropatia motora multifocal", "Outro"]
         dx_imuno_choice = st.radio("Especifique:", options=imuno_options, key="dx_imuno_choice")
         if dx_imuno_choice == "Outro":
-            st.text_input("Especifique", key="dx_imuno_outro", placeholder="Ex.: anti-MAG, AMAN/AMSAN, paraneoplásica, etc.")
+            st.text_input("Especifique", key="dx_imuno_outro", placeholder="Ex.: anti-MAG, paraneoplásica, etc.")
 
-# ✅ SUGESTÃO 1 (das últimas mensagens): abrir "Especifique" para essas duas categorias
 if dx_categoria == "Outras neuropatias adquiridas (nutricional, endocrinológica, infecciosa, tóxica, etc.)":
     st.text_input(
         "Especifique:",
@@ -825,7 +1340,6 @@ if dx_categoria == "Outros diagnósticos (neurônio motor, junção e músculo)"
         placeholder="Ex.: ELA / Miastenia / Miopatia / Doença do neurônio motor / etc.",
     )
 
-# Summary
 summary = dx_categoria
 if dx_categoria == "Neuropatia genética":
     choice = st.session_state.get("dx_genetica_choice", "")
@@ -864,11 +1378,19 @@ _ = text_area_lines("", 4, "conduta", placeholder="")
 # =========================================================
 # EXPORT
 # =========================================================
+def _has_any_nis_data() -> bool:
+    for k in NIS_KEYS_WEAKNESS:
+        if float(st.session_state.get(k, 0.0)) != 0.0:
+            return True
+    for k in (NIS_KEYS_REFLEXES + NIS_KEYS_SENSATION):
+        if int(st.session_state.get(k, 0)) != 0:
+            return True
+    return False
+
 def build_export_text(include_all: bool) -> str:
     parts = []
 
     if include_all:
-        # ✅ SUGESTÃO 2 (das últimas mensagens): exportar também a identificação
         parts.append(_section("IDENTIFICAÇÃO", _get("id_texto")))
 
         parts.append(_section(
@@ -917,9 +1439,37 @@ def build_export_text(include_all: bool) -> str:
         t = _get("evo_estavel_tempo")
         if t:
             evo_lines.append(f"Há quanto tempo: {t}")
+
     desc = _get("evo_descricao_texto")
     if desc:
         evo_lines.append("Descrição da evolução:\n" + desc)
+
+    reab = _get("evo_reabilitacao_texto")
+    if reab:
+        evo_lines.append("Reabilitação:\n" + reab)
+
+    nis_any = _has_any_nis_data()
+    nis_sum = _get("nis_total")
+    if nis_any and not nis_sum:
+        w, r, s, tot = compute_nis_components()
+        nis_sum = (
+            f"Fraqueza ({_fmt_score(w)}/{NIS_MAX_WEAKNESS}) + "
+            f"Reflexos ({_fmt_score(r)}/{NIS_MAX_REFLEXES}) + "
+            f"Sensibilidade ({_fmt_score(s)}/{NIS_MAX_SENSATION}) = "
+            f"Total ({_fmt_score(tot)}/{NIS_MAX_TOTAL})"
+        )
+
+    if nis_sum:
+        evo_lines.append(f"NIS: {nis_sum}")
+
+    if nis_any:
+        evo_lines.append("NIS_ITENS:")
+        for k in NIS_KEYS_WEAKNESS:
+            evo_lines.append(f"{k}: {_fmt_score(float(st.session_state.get(k, 0.0)))}")
+        for k in NIS_KEYS_REFLEXES:
+            evo_lines.append(f"{k}: {int(st.session_state.get(k, 0))}")
+        for k in NIS_KEYS_SENSATION:
+            evo_lines.append(f"{k}: {int(st.session_state.get(k, 0))}")
 
     incat = _get("incat_total")
     if incat:
@@ -937,29 +1487,20 @@ def build_export_text(include_all: bool) -> str:
 
     # Exame físico
     exame_neuro = _get("exame_fisico_neuro_texto")
+
     mrc_lines = []
-    mrc_map = [
-        ("Abdução do ombro", "mrc_ombro_D", "mrc_ombro_E"),
-        ("Flexão do cotovelo", "mrc_cotovelo_D", "mrc_cotovelo_E"),
-        ("Extensão do punho", "mrc_punho_D", "mrc_punho_E"),
-        ("Flexão do quadril", "mrc_quadril_D", "mrc_quadril_E"),
-        ("Extensão do joelho", "mrc_joelho_D", "mrc_joelho_E"),
-        ("Dorsiflexão do tornozelo", "mrc_tornozelo_D", "mrc_tornozelo_E"),
-    ]
-    for label, kd, ke in mrc_map:
-        vd = _get(kd)
-        ve = _get(ke)
-        if vd or ve:
-            mrc_lines.append(f"{label}: D {vd or '-'} / E {ve or '-'}")
-    mrc_block = "MRC:\n" + "\n".join(mrc_lines) if mrc_lines else ""
+    for label, kd, ke in MRC_ALL_ITEMS:
+        vd = _get(kd) or "-"
+        ve = _get(ke) or "-"
+        mrc_lines.append(f"{label}: D {vd} / E {ve}")
+    mrc_block = "MRC:\n" + "\n".join(mrc_lines)
 
     deform = _get("deformidades_osteo_texto")
 
     exame_block_parts = []
     if exame_neuro:
         exame_block_parts.append(exame_neuro)
-    if mrc_block:
-        exame_block_parts.append(mrc_block)
+    exame_block_parts.append(mrc_block)
     if deform:
         exame_block_parts.append("Deformidades osteoesqueléticas e exame clínico geral:\n" + deform)
 
@@ -1001,7 +1542,6 @@ def build_export_text(include_all: bool) -> str:
         if sub:
             dx_lines.append(f"Subtipo: {sub}")
 
-    # ✅ exporta o "Especifique" dessas duas categorias também
     if dx == "Outras neuropatias adquiridas (nutricional, endocrinológica, infecciosa, tóxica, etc.)":
         extra = _get("dx_outras_adquiridas")
         if extra:
