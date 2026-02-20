@@ -231,6 +231,19 @@ IBM_FRS_ITEMS_PT = [
     },
 ]
 
+IBM_FRS_EXPORT_ORDER = [
+    ("Deglutição", "ibmfrs_swallow"),
+    ("Escrita", "ibmfrs_handwriting"),
+    ("Alimentação", "ibmfrs_cutting"),
+    ("Destreza", "ibmfrs_fine_motor"),
+    ("Vestir-se", "ibmfrs_dressing"),
+    ("Higiene", "ibmfrs_hygiene"),
+    ("Lençóis", "ibmfrs_turning_bed"),
+    ("Levantar", "ibmfrs_sit_to_stand"),
+    ("Marcha", "ibmfrs_walking"),
+    ("Escadas", "ibmfrs_stairs"),
+]
+
 def _upsert_scale_line(prefix: str, new_line: str, target_key: str = "escalas"):
     """Remove linhas antigas com o mesmo prefixo e adiciona a nova ao final (sem apagar outras escalas)."""
     cur = (st.session_state.get(target_key) or "").strip()
@@ -240,11 +253,11 @@ def _upsert_scale_line(prefix: str, new_line: str, target_key: str = "escalas"):
     st.session_state[target_key] = "\n".join(kept).strip()
 
 def _build_ibmfrs_line(total: int) -> str:
-    mm_yyyy = _mm_yyyy_now()
+    mm_yyyy = _mm_yyyy_now()  # "02/2026"
     parts = []
-    for it in IBM_FRS_ITEMS_PT:
-        v = st.session_state.get(it["key"], 4)
-        parts.append(f"{it['title']}.{v}")
+    for lbl, key in IBM_FRS_EXPORT_ORDER:
+        v = int(st.session_state.get(key, 4))
+        parts.append(f"{lbl}.{v}")
     return f"IBM-FRS ({mm_yyyy}): " + " / ".join(parts) + f" = {total}/40"
 
 # ---------- IMPORT PARSER ----------
