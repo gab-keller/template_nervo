@@ -1,5 +1,12 @@
 import re
 import streamlit as st
+from datetime import datetime
+
+try:
+    from zoneinfo import ZoneInfo  # Python 3.9+
+    _TZ_SP = ZoneInfo("America/Sao_Paulo")
+except Exception:
+    _TZ_SP = None
 
 # =========================================================
 # CONSTANTES (usadas pela UI E pelo IMPORT/EXPORT)
@@ -97,6 +104,10 @@ DX_NOSO_OPTIONS = [
 # IBM-FRS (PT-BR) — conforme PDF anexo
 # =========================================================
 
+def _mm_yyyy_now() -> str:
+    dt = datetime.now(_TZ_SP) if _TZ_SP else datetime.now()
+    return dt.strftime("%m/%Y")
+
 IBM_FRS_ITEMS_PT = [
     {
         "n": 1,
@@ -112,7 +123,7 @@ IBM_FRS_ITEMS_PT = [
     },
     {
         "n": 2,
-        "title": "Escrita (mão dominante antes do início da IBM)",
+        "title": "Escrita (com a mão dominante)",
         "key": "ibmfrs_handwriting",
         "desc": {
             4: "Normal",
@@ -160,12 +171,12 @@ IBM_FRS_ITEMS_PT = [
     },
     {
         "n": 6,
-        "title": "Higiene (banho e toalete)",
+        "title": "Higiene (banho e ida ao banheiro)",
         "key": "ibmfrs_hygiene",
         "desc": {
             4: "Normal",
-            3: "Independente, mas com maior esforço ou menor atividade",
-            2: "Independente, mas requer dispositivos auxiliares (cadeira de banho, assento elevado etc.)",
+            3: "Independente, mas com maior esforço ou atividade diminuída",
+            2: "Independente, mas requer dispositivos auxiliares (cadeira de banho, assento de vaso sanitário, etc.)",
             1: "Requer assistência ocasional do cuidador",
             0: "Completamente dependente",
         },
@@ -201,7 +212,7 @@ IBM_FRS_ITEMS_PT = [
         "desc": {
             4: "Normal",
             3: "Lenta ou com leve instabilidade",
-            2: "Uso intermitente de dispositivo auxiliar (órtese AFO, bengala, andador)",
+            2: "Uso intermitente de dispositivo auxiliar (órtese, bengala, andador)",
             1: "Dependente de dispositivo auxiliar",
             0: "Dependente de cadeira de rodas",
         },
@@ -212,7 +223,7 @@ IBM_FRS_ITEMS_PT = [
         "key": "ibmfrs_stairs",
         "desc": {
             4: "Normal",
-            3: "Lento, com hesitação ou maior esforço; usa corrimão intermitentemente",
+            3: "Lento, com hesitação ou esforço aumentado; usa corrimão intermitentemente",
             2: "Dependente do corrimão",
             1: "Dependente do corrimão e de suporte adicional (bengala ou pessoa)",
             0: "Não consegue subir escadas",
@@ -228,12 +239,13 @@ def _upsert_scale_line(prefix: str, new_line: str, target_key: str = "escalas"):
     kept.append(new_line.strip())
     st.session_state[target_key] = "\n".join(kept).strip()
 
-def _build_ibmfrs_line(total: int) -> str:
+ddef _build_ibmfrs_line(total: int) -> str:
+    mm_yyyy = _mm_yyyy_now()
     parts = []
     for it in IBM_FRS_ITEMS_PT:
         v = st.session_state.get(it["key"], 4)
         parts.append(f"{it['title']}.{v}")
-    return "IBM-FRS: " + " / ".join(parts) + f" = {total}/40"
+    return f"IBM-FRS ({mm_yyyy}): " + " / ".join(parts) + f" = {total}/40"
 
 # ---------- IMPORT PARSER ----------
 _SECTION_TITLES = [
@@ -1286,7 +1298,7 @@ def _render_ibmfrs_form_body():
     with c1:
         if st.button("Salvar IBM-FRS em 'Escalas'", key="btn_save_ibmfrs", type="primary"):
             line = _build_ibmfrs_line(total)
-            _upsert_scale_line("IBM-FRS:", line, target_key="escalas")
+            _upsert_scale_line("IBM-FRS", line, target_key="escalas")
             st.session_state["ibmfrs_open"] = False
             st.rerun()
     with c2:
