@@ -383,7 +383,7 @@ def inline_label_input_dnpm(label_text: str, key: str, placeholder: str = ""):
 # =========================================================
 # MRC INPUT (UPDATED: allows 4+ / 4-)
 # =========================================================
-def small_mrc_box(key: str, placeholder: str = "0-5 / 4+ / 4-"):
+def small_mrc_box(key: str, placeholder: str = "0-5"):
     return st.text_input(
         "Valor (0–5, 4+/4-)",
         key=key,
