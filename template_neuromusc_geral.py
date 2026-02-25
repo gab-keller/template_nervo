@@ -380,13 +380,16 @@ def inline_label_input_dnpm(label_text: str, key: str, placeholder: str = ""):
     with c_input:
         return st.text_input("", key=key, placeholder=placeholder, label_visibility="collapsed")
 
-def small_mrc_box(key: str, placeholder: str = "0-5"):
+# =========================================================
+# MRC INPUT (UPDATED: allows 4+ / 4-)
+# =========================================================
+def small_mrc_box(key: str, placeholder: str = "0-5 / 4+ / 4-"):
     return st.text_input(
-        "Valor (0–5)",
+        "Valor (0–5, 4+/4-)",
         key=key,
         placeholder=placeholder,
         label_visibility="collapsed",
-        max_chars=1,
+        max_chars=2,  # UPDATED (was 1)
     )
 
 def _get(key: str, default: str = "") -> str:
@@ -850,7 +853,7 @@ def _import_from_full_export(text: str) -> tuple[bool, str]:
                 st.session_state["fono_chk"] = ok
                 st.session_state["fono_freq"] = num
 
-        # NOVO: captura Outras e Escalas como blocos
+        # captura Outras e Escalas como blocos
         st.session_state["outras_terapias"] = _extract_block(t, "Outras:", ["Escalas:"])
         st.session_state["escalas"] = _extract_block(t, "Escalas:", [])
 
@@ -911,19 +914,26 @@ def _import_from_full_export(text: str) -> tuple[bool, str]:
             for it in items:
                 it = it.replace("Axiais:", "").strip()
 
+                # UPDATED: accepts 0-5 plus optional +/-
                 mm = re.match(
-                    r"^(Extensores do tronco|Flexores do pescoço|Flexores do tronco)\s+([0-5])\s*$",
+                    r"^(Extensores do tronco|Flexores do pescoço|Flexores do tronco)\s+([0-5][+-]?)\s*$",
                     it,
                 )
                 if mm:
                     st.session_state[axial_labels[mm.group(1)]] = mm.group(2)
                     continue
 
-                mm = re.match(r"^(.*?):\s*D\s*([0-5\-]?)\s*/\s*E\s*([0-5\-]?)\s*$", it)
+                # UPDATED: accepts 0-5 plus optional +/- OR '-' placeholder
+                mm = re.match(
+                    r"^(.*?):\s*D\s*([0-5][+-]?|-)?\s*/\s*E\s*([0-5][+-]?|-)?\s*$",
+                    it,
+                )
                 if mm:
                     lbl = mm.group(1).strip()
-                    vd = mm.group(2).strip().replace("-", "")
-                    ve = mm.group(3).strip().replace("-", "")
+                    vd = (mm.group(2) or "").strip()
+                    ve = (mm.group(3) or "").strip()
+                    vd = "" if vd == "-" else vd
+                    ve = "" if ve == "-" else ve
                     if lbl in bilat_map:
                         kd, ke = bilat_map[lbl]
                         st.session_state[kd] = vd
@@ -1278,7 +1288,7 @@ freq_row("Fonoterapia", "fono_chk", "fono_freq")
 st.markdown("**Outras terapias e informações:**")
 _ = text_area_lines("", 3, "outras_terapias", placeholder="Ex.: Terapia ocupacional (frequência), Psicoterapia (frequência), outras")
 
-# NOVO: Escalas + botão IBM-FRS
+# Escalas + botão IBM-FRS
 st.markdown("**Escalas:**")
 _ = text_area_lines("", 2, "escalas", placeholder="IBM-FRS, ALS-FRS, CHOP INTEND, HFMSE, etc.")
 
@@ -1373,20 +1383,26 @@ def _force_row_bilateral(label: str, key_d: str, key_e: str):
     with c2:
         small_mrc_box(key_e)
 
-def _force_row_single(label: str, key: str, placeholder: str = "0-5"):
+def _force_row_single(label: str, key: str, placeholder: str = "0-5 / 4+ / 4-"):
     c0, c1, _fill = st.columns([3.2, 3.0, 10.0], vertical_alignment="center")
     with c0:
         st.markdown(f'<div class="inline-label">{label}</div>', unsafe_allow_html=True)
     with c1:
-        st.text_input("", key=key, placeholder=placeholder, label_visibility="collapsed", max_chars=1)
+        st.text_input(
+            "",
+            key=key,
+            placeholder=placeholder,
+            label_visibility="collapsed",
+            max_chars=2,  # UPDATED (was 1)
+        )
 
 if st.session_state.get("forca_open", False):
     st.markdown("#### Força motora (escala MRC)")
 
     st.markdown("**Músculos axiais:**")
-    _force_row_single("Extensores do tronco", "mrc_ext_tronco", placeholder="0-5")
-    _force_row_single("Flexores do pescoço", "mrc_flex_pescoco", placeholder="0-5")
-    _force_row_single("Flexores do tronco", "mrc_flex_tronco", placeholder="0-5")
+    _force_row_single("Extensores do tronco", "mrc_ext_tronco")
+    _force_row_single("Flexores do pescoço", "mrc_flex_pescoco")
+    _force_row_single("Flexores do tronco", "mrc_flex_tronco")
 
     st.markdown("---")
     st.markdown("**Músculos dos membros superiores:**")
@@ -1652,7 +1668,6 @@ def build_export_text(include_all: bool) -> str:
     if outras:
         multi_lines.append("Outras:\n" + outras)
 
-    # NOVO: Escalas
     escalas = _get("escalas")
     if escalas:
         multi_lines.append("Escalas:\n" + escalas)
