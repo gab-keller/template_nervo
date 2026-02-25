@@ -1383,7 +1383,7 @@ def _force_row_bilateral(label: str, key_d: str, key_e: str):
     with c2:
         small_mrc_box(key_e)
 
-def _force_row_single(label: str, key: str, placeholder: str = "0-5 / 4+ / 4-"):
+def _force_row_single(label: str, key: str, placeholder: str = "0-5"):
     c0, c1, _fill = st.columns([3.2, 3.0, 10.0], vertical_alignment="center")
     with c0:
         st.markdown(f'<div class="inline-label">{label}</div>', unsafe_allow_html=True)
