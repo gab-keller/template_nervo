@@ -666,16 +666,30 @@ def _import_from_full_export(text: str) -> tuple[bool, str]:
                 ln = ln.strip()
                 if not ln:
                     continue
-                mm = re.match(r"^(.*?):\s*D\s*([0-5\-]?)\s*/\s*E\s*([0-5\-]?)\s*$", ln)
+            
+                mm = re.match(r"^(.*?):\s*(.*)$", ln)
                 if not mm:
                     continue
+            
                 lbl = mm.group(1).strip()
-                vd = mm.group(2).strip().replace("-", "")
-                ve = mm.group(3).strip().replace("-", "")
-                if lbl in map_lbl:
-                    kd, ke = map_lbl[lbl]
-                    st.session_state[kd] = vd
-                    st.session_state[ke] = ve
+                rest = mm.group(2).strip()
+            
+                # aceita:
+                # "Grupo: D 5 / E 4"
+                # "Grupo: D 5"
+                # "Grupo: E 4"
+                md = re.search(r"\bD\s*([0-5])\b", rest)
+                me = re.search(r"\bE\s*([0-5])\b", rest)
+            
+                vd = (md.group(1) if md else "").strip()
+                ve = (me.group(1) if me else "").strip()
+
+    if lbl in map_lbl:
+        kd, ke = map_lbl[lbl]
+        if vd:
+            st.session_state[kd] = vd
+        if ve:
+            st.session_state[ke] = ve
 
         ok_mrc, tot_mrc = compute_mrc_ss(MRC_SS_KEYS)
         if ok_mrc and tot_mrc is not None:
@@ -1387,66 +1401,106 @@ def _has_any_nis_data() -> bool:
             return True
     return False
 
+def _add_line(lines: list[str], prefix: str, value: str):
+    v = (value or "").strip()
+    if v:
+        lines.append(f"{prefix}{v}")
+
+def _add_block(lines: list[str], header: str, value: str):
+    v = (value or "").strip()
+    if v:
+        lines.append(f"{header}\n{v}")
+
 def build_export_text(include_all: bool) -> str:
-    parts = []
+    parts: list[str] = []
 
+    def add_section(title: str, body_or_lines) -> None:
+        if isinstance(body_or_lines, list):
+            body = "\n".join([str(x).rstrip() for x in body_or_lines if str(x).strip()])
+        else:
+            body = (str(body_or_lines or "")).strip()
+
+        sec = _section(title, body)
+        if sec.strip():
+            parts.append(sec)
+
+    # =========================
+    # IDENTIFICAÇÃO / HISTÓRIA / ANTECEDENTES / FAMÍLIA
+    # (somente no "histórico completo")
+    # =========================
     if include_all:
-        parts.append(_section("IDENTIFICAÇÃO", _get("id_texto")))
+        add_section("IDENTIFICAÇÃO", _get("id_texto"))
 
-        parts.append(_section(
-            "HISTÓRIA CLÍNICA",
-            f"Idade ao início dos sintomas: {_get('idade_inicio_sintomas')}\n{_get('historia_clinica_texto')}"
-        ))
-        parts.append(_section("ANTECEDENTES PATOLÓGICOS", _get("antecedentes_patologicos_texto")))
+        hc_lines: list[str] = []
+        _add_line(hc_lines, "Idade ao início dos sintomas: ", _get("idade_inicio_sintomas"))
+        hc_txt = _get("historia_clinica_texto")
+        if hc_txt:
+            hc_lines.append(hc_txt)
+        add_section("HISTÓRIA CLÍNICA", hc_lines)
 
+        add_section("ANTECEDENTES PATOLÓGICOS", _get("antecedentes_patologicos_texto"))
+
+        hf_lines: list[str] = []
         hf_txt = _get("historia_familiar_texto")
-        padrao = []
+        if hf_txt:
+            hf_lines.append(hf_txt)
+
+        padrao: list[str] = []
         if st.session_state.get("hf_esporadico"):
             padrao.append("Esporádico")
         if st.session_state.get("hf_familiar"):
             padrao.append("Familiar")
-        padrao_txt = ", ".join(padrao) if padrao else ""
-        if padrao_txt:
-            hf_txt = (hf_txt + "\n" if hf_txt else "") + f"Padrão de herança: {padrao_txt}"
-        parts.append(_section("HISTÓRIA FAMILIAR", hf_txt))
+        if padrao:
+            hf_lines.append(f"Padrão de herança: {', '.join(padrao)}")
 
-    # Medicações
+        add_section("HISTÓRIA FAMILIAR", hf_lines)
+
+    # =========================
+    # MEDICAÇÕES (na ordem do template)
+    # =========================
+    meds_lines: list[str] = []
+
     trat = _get("tratamento_atual_radio")
-    trat_line = f"Tratamento atual: {trat}" if trat else ""
+    _add_line(meds_lines, "Tratamento atual: ", trat)
+
     tempo = ""
     if trat == "em uso de tratamento medicamentoso":
         tempo = _get("trat_em_uso_tempo")
     elif trat == "sem tratamento medicamentoso":
         tempo = _get("trat_sem_tempo")
-    if tempo:
-        trat_line = (trat_line + "\n" if trat_line else "") + f"Há quanto tempo: {tempo}"
+    _add_line(meds_lines, "Há quanto tempo: ", tempo)
 
-    meds_block = "\n".join([x for x in [
-        trat_line,
-        "Medicamentos de uso atual ou prévio:\n" + _get("meds_atual_previo_texto") if _get("meds_atual_previo_texto") else "",
-        "Outros medicamentos:\n" + _get("outros_meds_texto") if _get("outros_meds_texto") else "",
-        "Paciente transplantado hepático: " + _bool_to_txt(bool(st.session_state.get("paciente_transplantado")))
-        if "paciente_transplantado" in st.session_state else "",
-    ] if x.strip()])
-    parts.append(_section("MEDICAÇÕES MODIFICADORAS DE DOENÇA / IMUNOSSUPRESSORES", meds_block))
+    _add_block(meds_lines, "Medicamentos de uso atual ou prévio:", _get("meds_atual_previo_texto"))
+    _add_block(meds_lines, "Outros medicamentos:", _get("outros_meds_texto"))
 
-    # Evolução
+    # Checkbox: só exporta se marcado (evita “Não” quando usuário não preencheu intencionalmente)
+    if bool(st.session_state.get("paciente_transplantado")):
+        meds_lines.append("Paciente transplantado hepático: Sim")
+
+    add_section("MEDICAÇÕES MODIFICADORAS DE DOENÇA / IMUNOSSUPRESSORES", meds_lines)
+
+    # =========================
+    # EVOLUÇÃO CLÍNICA (na ordem do template)
+    # =========================
+    evo_lines: list[str] = []
+
     controle = _get("controle_atual_radio")
-    evo_lines = []
-    if controle:
-        evo_lines.append(f"Controle atual: {controle}")
+    _add_line(evo_lines, "Controle atual: ", controle)
+
     if controle == "estável ou melhorando":
-        t = _get("evo_estavel_tempo")
-        if t:
-            evo_lines.append(f"Há quanto tempo: {t}")
+        _add_line(evo_lines, "Há quanto tempo: ", _get("evo_estavel_tempo"))
 
-    desc = _get("evo_descricao_texto")
-    if desc:
-        evo_lines.append("Descrição da evolução:\n" + desc)
+    _add_block(evo_lines, "Descrição da evolução:", _get("evo_descricao_texto"))
+    _add_block(evo_lines, "Reabilitação:", _get("evo_reabilitacao_texto"))
 
-    reab = _get("evo_reabilitacao_texto")
-    if reab:
-        evo_lines.append("Reabilitação:\n" + reab)
+    # INCAT / PND / NIS / MRC-SS / Outras
+    incat = _get("incat_total")
+    if incat:
+        evo_lines.append(f"Escala INCAT: {incat}")
+
+    pnd = _get("pnd_total")
+    if pnd:
+        evo_lines.append(f"Escala PND: {pnd}")
 
     nis_any = _has_any_nis_data()
     nis_sum = _get("nis_total")
@@ -1458,7 +1512,6 @@ def build_export_text(include_all: bool) -> str:
             f"Sensibilidade ({_fmt_score(s)}/{NIS_MAX_SENSATION}) = "
             f"Total ({_fmt_score(tot)}/{NIS_MAX_TOTAL})"
         )
-
     if nis_sum:
         evo_lines.append(f"NIS: {nis_sum}")
 
@@ -1471,76 +1524,86 @@ def build_export_text(include_all: bool) -> str:
         for k in NIS_KEYS_SENSATION:
             evo_lines.append(f"{k}: {int(st.session_state.get(k, 0))}")
 
-    incat = _get("incat_total")
-    if incat:
-        evo_lines.append(f"Escala INCAT: {incat}")
-
     mrc_ss = _get("mrc_ss_total")
     if mrc_ss:
         evo_lines.append(f"MRC-SS: {mrc_ss}")
 
-    outras = _get("outras_escalas_seguimento")
-    if outras:
-        evo_lines.append("Outras escalas e métricas:\n" + outras)
+    _add_block(evo_lines, "Outras escalas e métricas:", _get("outras_escalas_seguimento"))
 
-    parts.append(_section("EVOLUÇÃO CLÍNICA", "\n".join(evo_lines)))
+    add_section("EVOLUÇÃO CLÍNICA", evo_lines)
 
-    # Exame físico
+    # =========================
+    # EXAME FÍSICO NEUROLÓGICO (na ordem do template)
+    # =========================
+    ex_parts: list[str] = []
+
     exame_neuro = _get("exame_fisico_neuro_texto")
+    if exame_neuro:
+        ex_parts.append(exame_neuro)
 
-    mrc_lines = []
+    # MRC: inclui só músculos preenchidos; e só lados preenchidos
+    mrc_lines: list[str] = []
     for label, kd, ke in MRC_ALL_ITEMS:
-        vd = _get(kd) or "-"
-        ve = _get(ke) or "-"
-        mrc_lines.append(f"{label}: D {vd} / E {ve}")
-    mrc_block = "MRC:\n" + "\n".join(mrc_lines)
+        vd = _get(kd)
+        ve = _get(ke)
+        if not vd and not ve:
+            continue
+
+        segs: list[str] = []
+        if vd:
+            segs.append(f"D {vd}")
+        if ve:
+            segs.append(f"E {ve}")
+
+        mrc_lines.append(f"{label}: " + " / ".join(segs))
+
+    if mrc_lines:
+        ex_parts.append("MRC:\n" + "\n".join(mrc_lines))
 
     deform = _get("deformidades_osteo_texto")
-
-    exame_block_parts = []
-    if exame_neuro:
-        exame_block_parts.append(exame_neuro)
-    exame_block_parts.append(mrc_block)
     if deform:
-        exame_block_parts.append("Deformidades osteoesqueléticas e exame clínico geral:\n" + deform)
+        ex_parts.append("Deformidades osteoesqueléticas e exame clínico geral:\n" + deform)
 
-    parts.append(_section("EXAME FÍSICO NEUROLÓGICO", "\n\n".join(exame_block_parts)))
+    add_section("EXAME FÍSICO NEUROLÓGICO", "\n\n".join(ex_parts))
 
-    # Exames complementares
-    exames_lines = []
-    if _get("exames_enmg"):
-        exames_lines.append("ENMG: " + _get("exames_enmg"))
-    if _get("exames_liquor"):
-        exames_lines.append("Líquor: " + _get("exames_liquor"))
-    if _get("exames_usg_nervos"):
-        exames_lines.append("USG nervos: " + _get("exames_usg_nervos"))
-    if _get("exames_biopsia"):
-        exames_lines.append("Biópsia: " + _get("exames_biopsia"))
-    if _get("exames_demais"):
-        exames_lines.append("Demais exames: " + _get("exames_demais"))
-    parts.append(_section("EXAMES COMPLEMENTARES", "\n".join(exames_lines)))
+    # =========================
+    # EXAMES COMPLEMENTARES (na ordem do template)
+    # =========================
+    exames_lines: list[str] = []
+    _add_line(exames_lines, "ENMG: ", _get("exames_enmg"))
+    _add_line(exames_lines, "Líquor: ", _get("exames_liquor"))
+    _add_line(exames_lines, "USG nervos: ", _get("exames_usg_nervos"))
+    _add_line(exames_lines, "Biópsia: ", _get("exames_biopsia"))
+    _add_line(exames_lines, "Demais exames: ", _get("exames_demais"))
+    add_section("EXAMES COMPLEMENTARES", exames_lines)
 
-    parts.append(_section("IMPRESSÃO E DISCUSSÃO", _get("impressao_discussao")))
+    # =========================
+    # IMPRESSÃO / DX / CONDUTA (na ordem do template)
+    # =========================
+    add_section("IMPRESSÃO E DISCUSSÃO", _get("impressao_discussao"))
 
-    # Diagnóstico
+    dx_lines: list[str] = []
     dx = _get("radio_dx_categoria")
-    dx_lines = []
     if dx:
         dx_lines.append(dx)
 
     if dx == "Neuropatia genética":
         gene = _get("dx_genetica_choice")
-        if gene == "Outro":
-            gene = _get("dx_genetica_outro") or "Outro (não especificado)"
-        if gene:
+        if gene and gene != "Outro":
             dx_lines.append(f"Gene: {gene}")
+        elif gene == "Outro":
+            extra = _get("dx_genetica_outro")
+            if extra:
+                dx_lines.append(f"Gene: {extra}")
 
     if dx == "Neuropatia imunomediada":
         sub = _get("dx_imuno_choice")
-        if sub == "Outro":
-            sub = _get("dx_imuno_outro") or "Outro (não especificado)"
-        if sub:
+        if sub and sub != "Outro":
             dx_lines.append(f"Subtipo: {sub}")
+        elif sub == "Outro":
+            extra = _get("dx_imuno_outro")
+            if extra:
+                dx_lines.append(f"Subtipo: {extra}")
 
     if dx == "Outras neuropatias adquiridas (nutricional, endocrinológica, infecciosa, tóxica, etc.)":
         extra = _get("dx_outras_adquiridas")
@@ -1552,11 +1615,13 @@ def build_export_text(include_all: bool) -> str:
         if extra:
             dx_lines.append(f"Especifique: {extra}")
 
-    parts.append(_section("DIAGNÓSTICO / HIPÓTESE DIAGNÓSTICA", "\n".join(dx_lines)))
-    parts.append(_section("CONDUTA", _get("conduta")))
+    add_section("DIAGNÓSTICO / HIPÓTESE DIAGNÓSTICA", dx_lines)
+    add_section("CONDUTA", _get("conduta"))
 
     cleaned = [p for p in parts if p.strip()]
     return "\n".join(cleaned).strip() + "\n"
+
+
 
 # =========================================================
 # SEÇÃO: EXPORTAR / IMPORTAR (TESTES)
